@@ -13,6 +13,7 @@ const els = {
   saveSettings: document.getElementById('saveSettings'),
   closeSettings: document.getElementById('closeSettings'),
   settingsButton: document.getElementById('settingsButton'),
+  brandHome: document.getElementById('brandHome'),
   lobby: document.getElementById('lobby'),
   workspace: document.getElementById('workspace'),
   settings: document.getElementById('settings'),
@@ -224,7 +225,10 @@ function insertLineAfter(line, type = 'action') {
 function handleLineKeydown(e, line) {
   if (e.key === 'Tab') {
     e.preventDefault();
-    setLineType(line, 'character');
+    const order = ['scene', 'action', 'character', 'dialogue'];
+    const idx = order.indexOf(line.dataset.type);
+    const prevType = order[(idx - 1 + order.length) % order.length];
+    setLineType(line, prevType);
   }
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -400,6 +404,13 @@ function registerEvents() {
     await saveProfileSettings();
     showSection('lobby');
     renderRecent();
+  });
+  els.brandHome.addEventListener('click', () => showSection('lobby'));
+  els.brandHome.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      showSection('lobby');
+    }
   });
   els.profileSave.addEventListener('click', saveProfileSettings);
   els.addPage.addEventListener('click', addPage);
