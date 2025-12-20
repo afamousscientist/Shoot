@@ -67,34 +67,6 @@
             </thead>
             <tbody></tbody>
           </table>
-
-          <div class="object-builder" id="objectBuilder">
-            <div class="panel-header tight">
-              <div class="with-icon" data-icon="note">Object builder</div>
-              <div class="muted small">Create director + script instructions</div>
-            </div>
-            <div class="builder-grid">
-              <label>Title
-                <input id="noteTitle" type="text" placeholder="Camera move" />
-              </label>
-              <label>Accent color
-                <input id="noteColor" type="color" value="#2b8cff" />
-              </label>
-              <label>Note text
-                <textarea id="noteBody" rows="3" placeholder="Push in on hero, hold for reaction"></textarea>
-              </label>
-            </div>
-            <div class="builder-preview">
-              <div class="muted small">Preview (drag into Director box)</div>
-              <div id="notePreview" class="note-card draggable" draggable="true" aria-label="Note preview"></div>
-            </div>
-            <div class="builder-actions">
-              <button id="addNoteObject" class="with-icon" data-icon="add">Save to toolkit</button>
-              <span id="noteModeStatus" class="muted small hidden"></span>
-              <div class="muted small">Toolkit items can be dragged into any page's director box.</div>
-            </div>
-            <div id="noteLibrary" class="note-library"></div>
-          </div>
         </aside>
 
         <section class="editor" id="editorPanel">
@@ -120,14 +92,42 @@
               spellcheck="false"
             ></div>
           </div>
+        </section>
 
-          <div class="director-panel">
-            <div class="panel-header">
-              <div class="with-icon" data-icon="note">Director notes</div>
-              <div class="muted small">Drag objects here — saved separately from the script</div>
-            </div>
-            <div id="directorBox" class="director-box" aria-label="Director notes drop zone" tabindex="0"></div>
+        <section class="builder-panel" id="objectBuilder">
+          <div class="panel-header tight">
+            <div class="with-icon" data-icon="note">Object builder</div>
+            <div class="muted small">Create director + script instructions</div>
           </div>
+          <div class="builder-grid">
+            <label>Title
+              <input id="noteTitle" type="text" placeholder="Camera move" />
+            </label>
+            <label>Accent color
+              <input id="noteColor" type="color" value="#2b8cff" />
+            </label>
+            <label>Note text
+              <textarea id="noteBody" rows="3" placeholder="Push in on hero, hold for reaction"></textarea>
+            </label>
+          </div>
+          <div class="builder-preview">
+            <div class="muted small">Preview (drag into Director box)</div>
+            <div id="notePreview" class="note-card draggable" draggable="true" aria-label="Note preview"></div>
+          </div>
+          <div class="builder-actions">
+            <button id="addNoteObject" class="with-icon" data-icon="add">Save to toolkit</button>
+            <span id="noteModeStatus" class="muted small hidden"></span>
+            <div class="muted small">Toolkit items can be dragged into any page's director box.</div>
+          </div>
+          <div id="noteLibrary" class="note-library"></div>
+        </section>
+
+        <section class="director-panel" id="directorPanel">
+          <div class="panel-header">
+            <div class="with-icon" data-icon="note">Director notes</div>
+            <div class="muted small">Drag objects here — saved separately from the script</div>
+          </div>
+          <div id="directorBox" class="director-box" aria-label="Director notes drop zone" tabindex="0"></div>
         </section>
       </div>
 
