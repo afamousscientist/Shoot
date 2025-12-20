@@ -32,6 +32,7 @@ const els = {
   collapseToolbar: document.getElementById('collapseToolbar'),
   toolItems: document.querySelectorAll('#toolShelf input[type="checkbox"]'),
   scriptEditor: document.getElementById('scriptEditor'),
+  scriptGuide: document.getElementById('scriptGuide'),
   editorMeta: document.getElementById('editorMeta'),
   lineTypeButtons: document.querySelectorAll('[data-line-type]')
 };
@@ -217,8 +218,9 @@ function normalizeBlocksFromText(page) {
     let type = existing?.type || prev[idx]?.type;
     if (!type) {
       if (idx === 0) type = 'scene';
+      else if (previousType === 'scene') type = 'action';
       else if (previousType === 'character') type = 'dialogue';
-      else type = 'action';
+      else type = previousType || 'action';
     }
     const normalizedText = (type === 'scene' || type === 'character') ? (text || '').toUpperCase() : text || '';
     normalizedLines[idx] = normalizedText;
@@ -234,6 +236,8 @@ function normalizeBlocksFromText(page) {
     els.scriptEditor.value = refreshed;
     els.scriptEditor.setSelectionRange(selection[0], selection[1]);
   }
+
+  renderGuide(page);
 }
 
 function captureScriptToState() {
@@ -249,8 +253,31 @@ function highlightChip(type) {
   });
 }
 
+function escapeHtml(text = '') {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderGuide(page) {
+  if (!page || !page.blocks) {
+    els.scriptGuide.innerHTML = '';
+    return;
+  }
+  const guide = page.blocks.map(block => {
+    const type = block.type || 'action';
+    const cls = `guide-line line-${type}`;
+    const text = (type === 'scene' || type === 'character') ? (block.text || '').toUpperCase() : (block.text || '');
+    return `<div class="${cls}">${escapeHtml(text) || '&nbsp;'}</div>`;
+  }).join('');
+  els.scriptGuide.innerHTML = guide;
+}
+
 function renderScript(page) {
   els.scriptEditor.value = '';
+  els.scriptGuide.innerHTML = '';
   els.editorMeta.textContent = page ? `${page.title} • ${page.type}` : 'No page loaded';
   els.scriptEditor.placeholder = page ? '' : 'Double-click a page to start writing.';
   if (!page) return;
@@ -268,6 +295,7 @@ function renderScript(page) {
   }).join('\n');
   highlightChip(page.blocks[0]?.type || 'scene');
   captureScriptToState();
+  renderGuide(page);
 }
 
 async function saveProject() {
@@ -418,6 +446,7 @@ function registerEvents() {
     const idx = getCaretLineIndex();
     if (page && page.blocks[idx]) {
       highlightChip(page.blocks[idx].type);
+      renderGuide(page);
     }
   });
 
@@ -432,7 +461,12 @@ function registerEvents() {
       if (!current) return;
       const order = ['scene', 'action', 'character', 'dialogue'];
       const curIdx = order.indexOf(current.type);
-      const nextType = order[(curIdx + 1) % order.length];
+      let nextType;
+      if (current.type === 'action') {
+        nextType = 'character';
+      } else {
+        nextType = order[(curIdx + 1) % order.length];
+      }
       current.type = nextType;
       highlightChip(nextType);
       captureScriptToState();
@@ -445,6 +479,7 @@ function registerEvents() {
     const idx = getCaretLineIndex();
     if (page.blocks[idx]) {
       highlightChip(page.blocks[idx].type);
+      renderGuide(page);
     }
   });
 

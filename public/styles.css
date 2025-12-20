@@ -433,15 +433,76 @@ button[data-icon]::before,
   line-height: 1.45;
   width: 100%;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  color: var(--text-strong);
+  color: transparent;
+  caret-color: #f5fbff;
   backdrop-filter: blur(6px);
   resize: none;
   outline: none;
   white-space: pre-wrap;
+  position: relative;
+  background-color: transparent;
+  z-index: 1;
 }
 
 .script-editor::placeholder {
   color: #91a6c9;
+}
+
+.script-editor-shell {
+  position: relative;
+  min-height: 320px;
+}
+
+.script-guide {
+  position: absolute;
+  inset: 0;
+  padding: 18px 26px;
+  pointer-events: none;
+  white-space: pre-wrap;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+  opacity: 0.92;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.guide-line {
+  display: block;
+  padding: 2px 0;
+}
+
+.line-scene {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.line-action {
+  margin-left: 20px;
+  margin-right: 120px;
+}
+
+.line-character {
+  text-transform: uppercase;
+  text-align: center;
+  margin-left: 140px;
+  margin-right: 140px;
+  letter-spacing: 0.08em;
+}
+
+.line-dialogue {
+  text-align: center;
+  margin-left: 110px;
+  margin-right: 170px;
+}
+
+.script-guide .line-scene,
+.script-guide .line-action,
+.script-guide .line-character,
+.script-guide .line-dialogue {
+  width: calc(100% - 40px);
 }
 
 @keyframes fadeInPage {
