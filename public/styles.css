@@ -1,0 +1,279 @@
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --panel: #111827;
+  --accent: #38bdf8;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #1f2937;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0b1224, #0f172a);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(17, 24, 39, 0.7);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  backdrop-filter: blur(4px);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.profile-name {
+  font-weight: 600;
+}
+
+main {
+  padding: 20px;
+  display: grid;
+  gap: 20px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.lobby-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.open-area select,
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+button {
+  background: var(--accent);
+  color: #0b1224;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(56, 189, 248, 0.3);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.icon-button {
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px 10px;
+}
+
+.recent-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.recent-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.recent-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.lobby-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.workspace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.project-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.layout {
+  display: grid;
+  gap: 12px;
+  min-height: 420px;
+}
+
+.layout.horizontal {
+  grid-template-columns: 40% 60%;
+  grid-template-rows: 1fr;
+}
+
+.layout.vertical {
+  grid-template-columns: 1fr;
+  grid-template-rows: 220px 1fr;
+}
+
+.rundown,
+.editor {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.page-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text);
+}
+
+.page-table th,
+.page-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 6px;
+  text-align: left;
+}
+
+.page-table tbody tr {
+  cursor: pointer;
+}
+
+.page-table tbody tr:hover {
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.editor-body label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+input,
+textarea,
+select {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0b1224;
+  color: var(--text);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.toolbar {
+  margin-top: 12px;
+  background: #0b1224;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar.collapsed .tool-items {
+  display: none;
+}
+
+.tool-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.9rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .layout.horizontal {
+    grid-template-columns: 1fr;
+    grid-template-rows: 220px 1fr;
+  }
+}
