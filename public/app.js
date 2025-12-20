@@ -25,15 +25,30 @@ const els = {
   orientationToggle: document.getElementById('orientationToggle'),
   addPage: document.getElementById('addPage'),
   pageTable: document.getElementById('pageTable').querySelector('tbody'),
-  pageTitle: document.getElementById('pageTitle'),
-  blockSelect: document.getElementById('blockSelect'),
-  pageSummary: document.getElementById('pageSummary'),
-  pageText: document.getElementById('pageText'),
   saveProject: document.getElementById('saveProject'),
   toolShelf: document.getElementById('toolShelf'),
   collapseToolbar: document.getElementById('collapseToolbar'),
-  toolItems: document.querySelectorAll('#toolShelf input[type="checkbox"]')
+  toolItems: document.querySelectorAll('#toolShelf input[type="checkbox"]'),
+  scriptEditor: document.getElementById('scriptEditor'),
+  editorMeta: document.getElementById('editorMeta'),
+  lineTypeButtons: document.querySelectorAll('[data-line-type]')
 };
+
+function normalizePageShape(page) {
+  const normalized = { ...page };
+  normalized.type = normalized.type || normalized.block || 'Shot';
+  normalized.synopsis = normalized.synopsis ?? normalized.summary ?? '';
+  if (!Array.isArray(normalized.blocks)) {
+    const seedText = (normalized.text || '').split('\n').filter(line => line !== '');
+    const defaultType = normalized.block || 'action';
+    normalized.blocks = (seedText.length ? seedText : ['']).map((text, idx) => ({
+      id: `blk-${normalized.id}-${idx}`,
+      type: defaultType,
+      text
+    }));
+  }
+  return normalized;
+}
 
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
@@ -55,6 +70,10 @@ async function loadProfile() {
 
 async function loadProjects() {
   state.projects = await fetchJson('/api/projects');
+  state.projects = state.projects.map(project => ({
+    ...project,
+    pages: project.pages.map(normalizePageShape)
+  }));
   renderProjectSelect();
   renderRecent();
 }
@@ -107,42 +126,191 @@ function renderPages() {
   state.currentProject.pages.forEach((page, index) => {
     const row = document.createElement('tr');
     row.dataset.pageId = page.id;
-    row.innerHTML = `<td>${index + 1}</td><td>${page.title}</td><td>${page.block}</td><td>${page.summary || ''}</td>`;
+    row.innerHTML = `
+      <td class="index-col">${index + 1}</td>
+      <td class="editable-cell" data-field="title">${page.title}</td>
+      <td class="editable-cell" data-field="type">${page.type || 'Shot'}</td>
+      <td class="editable-cell" data-field="synopsis">${page.synopsis || ''}</td>
+    `;
     row.addEventListener('dblclick', () => selectPage(page.id));
+    if (page.id === state.selectedPageId) {
+      row.classList.add('active');
+    }
     els.pageTable.appendChild(row);
   });
+}
+
+function startCellEdit(cell) {
+  const row = cell.closest('tr');
+  const pageId = row?.dataset.pageId;
+  const field = cell.dataset.field;
+  if (!pageId || !field) return;
+  const original = cell.textContent;
+  cell.setAttribute('contenteditable', 'true');
+  cell.focus();
+
+  function finish() {
+    cell.removeAttribute('contenteditable');
+    const value = cell.textContent.trim();
+    const page = state.currentProject.pages.find(p => p.id === pageId);
+    if (page) {
+      page[field] = value || (field === 'type' ? 'Shot' : '');
+      if (page.id === state.selectedPageId && (field === 'title' || field === 'type')) {
+        els.editorMeta.textContent = `${page.title} • ${page.type}`;
+      }
+    }
+    cell.textContent = value;
+    cell.removeEventListener('blur', onBlur);
+    cell.removeEventListener('keydown', onKey);
+  }
+
+  function onKey(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finish();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cell.textContent = original;
+      finish();
+    }
+  }
+
+  function onBlur() {
+    finish();
+  }
+
+  cell.addEventListener('blur', onBlur);
+  cell.addEventListener('keydown', onKey);
 }
 
 function selectPage(pageId) {
   const page = state.currentProject.pages.find(p => p.id === pageId);
   if (!page) return;
   state.selectedPageId = pageId;
-  els.pageTitle.value = page.title || '';
-  els.blockSelect.value = page.block || 'action';
-  els.pageSummary.value = page.summary || '';
-  els.pageText.value = page.text || '';
+  renderPages();
+  renderScript(page);
 }
 
-function syncEditorToState() {
+let activeLineId = null;
+
+function enforceCapitalization(line) {
+  if (line.dataset.type === 'scene' || line.dataset.type === 'character') {
+    line.textContent = line.textContent.toUpperCase();
+  }
+}
+
+function setLineType(line, type) {
+  line.dataset.type = type;
+  line.className = `script-line ${type}`;
+  enforceCapitalization(line);
+  highlightChip(type);
+  captureScriptToState();
+}
+
+function insertLineAfter(line, type = 'action') {
+  const newLine = document.createElement('div');
+  newLine.className = `script-line ${type}`;
+  newLine.dataset.type = type;
+  newLine.dataset.blockId = `blk-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  newLine.contentEditable = 'true';
+  newLine.textContent = '';
+  wireLineEvents(newLine);
+  line.after(newLine);
+  newLine.focus();
+  captureScriptToState();
+}
+
+function handleLineKeydown(e, line) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    setLineType(line, 'character');
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const nextType = line.dataset.type === 'character' ? 'dialogue' : 'action';
+    insertLineAfter(line, nextType);
+  }
+}
+
+function wireLineEvents(line) {
+  line.addEventListener('focus', () => {
+    activeLineId = line.dataset.blockId;
+    highlightChip(line.dataset.type);
+  });
+  line.addEventListener('input', () => {
+    enforceCapitalization(line);
+    captureScriptToState();
+  });
+  line.addEventListener('keydown', e => handleLineKeydown(e, line));
+}
+
+function captureScriptToState() {
   if (!state.currentProject || !state.selectedPageId) return;
   const page = state.currentProject.pages.find(p => p.id === state.selectedPageId);
   if (!page) return;
-  page.title = els.pageTitle.value;
-  page.block = els.blockSelect.value;
-  page.summary = els.pageSummary.value;
-  page.text = els.pageText.value;
+  const blocks = Array.from(els.scriptEditor.querySelectorAll('.script-line')).map(line => ({
+    id: line.dataset.blockId,
+    type: line.dataset.type,
+    text: line.textContent.trim()
+  }));
+  page.blocks = blocks;
+}
+
+function highlightChip(type) {
+  els.lineTypeButtons.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lineType === type);
+  });
+}
+
+function renderScript(page) {
+  els.scriptEditor.innerHTML = '';
+  els.editorMeta.textContent = page ? `${page.title} • ${page.type}` : 'No page loaded';
+  if (!page) {
+    const empty = document.createElement('div');
+    empty.className = 'muted';
+    empty.textContent = 'Double-click a page to start writing.';
+    els.scriptEditor.appendChild(empty);
+    return;
+  }
+  if (!page.blocks || !page.blocks.length) {
+    page.blocks = [
+      { id: `blk-${page.id}-0`, type: 'scene', text: 'INT. LOCATION - DAY' },
+      { id: `blk-${page.id}-1`, type: 'action', text: '' }
+    ];
+  }
+  page.blocks.forEach(block => {
+    const line = document.createElement('div');
+    line.className = `script-line ${block.type}`;
+    line.dataset.type = block.type;
+    line.dataset.blockId = block.id || `blk-${page.id}-${Math.random().toString(16).slice(2)}`;
+    line.contentEditable = 'true';
+    line.textContent = block.type === 'scene' || block.type === 'character'
+      ? (block.text || '').toUpperCase()
+      : block.text || '';
+    wireLineEvents(line);
+    els.scriptEditor.appendChild(line);
+  });
+  const firstLine = els.scriptEditor.querySelector('.script-line');
+  if (firstLine) {
+    firstLine.focus();
+  }
+  captureScriptToState();
 }
 
 async function saveProject() {
   if (!state.currentProject) return;
-  syncEditorToState();
+  captureScriptToState();
   const updated = await fetchJson(`/api/projects/${state.currentProject.id}`, {
     method: 'PUT',
     body: JSON.stringify(state.currentProject)
   });
-  state.currentProject = updated;
+  state.currentProject = {
+    ...updated,
+    pages: updated.pages.map(normalizePageShape)
+  };
   const idx = state.projects.findIndex(p => p.id === updated.id);
-  if (idx !== -1) state.projects[idx] = updated;
+  if (idx !== -1) state.projects[idx] = state.currentProject;
   renderPages();
   renderRecent();
   renderProjectSelect();
@@ -150,7 +318,8 @@ async function saveProject() {
 
 async function createProject() {
   const project = await fetchJson('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'New Project' }) });
-  state.projects.push(project);
+  const normalized = { ...project, pages: project.pages.map(normalizePageShape) };
+  state.projects.push(normalized);
   await loadProfile();
   renderProjectSelect();
   renderRecent();
@@ -160,9 +329,12 @@ async function createProject() {
 async function openProjectById(id) {
   if (!id) return;
   const project = await fetchJson(`/api/projects/${id}`);
-  state.currentProject = project;
-  state.selectedPageId = project.pages[0]?.id || null;
-  els.projectTitle.textContent = project.name;
+  const normalized = { ...project, pages: project.pages.map(normalizePageShape) };
+  state.currentProject = normalized;
+  state.selectedPageId = normalized.pages[0]?.id || null;
+  els.projectTitle.textContent = normalized.name;
+  const existing = state.projects.findIndex(p => p.id === normalized.id);
+  if (existing !== -1) state.projects[existing] = normalized;
   renderPages();
   selectPage(state.selectedPageId);
   showSection('workspace');
@@ -175,9 +347,12 @@ function addPage() {
   const newPage = {
     id: `page-${Date.now()}`,
     title: `Page ${state.currentProject.pages.length + 1}`,
-    block: 'action',
-    summary: '',
-    text: ''
+    type: 'Shot',
+    synopsis: '',
+    blocks: [
+      { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },
+      { id: `blk-${Date.now()}-action`, type: 'action', text: '' }
+    ]
   };
   state.currentProject.pages.push(newPage);
   renderPages();
@@ -207,6 +382,15 @@ async function saveProfileSettings() {
   els.profileName.textContent = state.profile.userName;
 }
 
+function attachTableEditing() {
+  els.pageTable.addEventListener('click', e => {
+    const cell = e.target.closest('.editable-cell');
+    if (!cell) return;
+    e.stopPropagation();
+    startCellEdit(cell);
+  });
+}
+
 function registerEvents() {
   els.newProject.addEventListener('click', createProject);
   els.openProject.addEventListener('click', () => openProjectById(els.openSelect.value));
@@ -226,8 +410,25 @@ function registerEvents() {
     els.collapseToolbar.textContent = els.toolShelf.classList.contains('collapsed') ? 'Show tools' : 'Hide tools';
   });
 
-  [els.pageTitle, els.blockSelect, els.pageSummary, els.pageText].forEach(control => {
-    control.addEventListener('input', () => syncEditorToState());
+  attachTableEditing();
+
+  els.lineTypeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.lineType;
+      const activeLine = activeLineId
+        ? els.scriptEditor.querySelector(`[data-block-id="${activeLineId}"]`)
+        : els.scriptEditor.querySelector('.script-line');
+      if (activeLine) {
+        setLineType(activeLine, type);
+      }
+    });
+  });
+
+  els.scriptEditor.addEventListener('click', e => {
+    const line = e.target.closest('.script-line');
+    if (line) {
+      line.focus();
+    }
   });
 
   window.addEventListener('keydown', e => {

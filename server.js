@@ -155,9 +155,12 @@ const server = http.createServer(async (req, res) => {
               {
                 id: `page-${Date.now()}`,
                 title: 'Page 1',
-                block: 'action',
-                summary: 'Establishing page',
-                text: ''
+                type: 'Shot',
+                synopsis: 'Establishing page',
+                blocks: [
+                  { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },
+                  { id: `blk-${Date.now()}-action`, type: 'action', text: '' }
+                ]
               }
             ],
             updatedAt: now

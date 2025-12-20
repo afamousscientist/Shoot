@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shoot Projects</title>
+  <title>Shoot!</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="app-header">
     <div class="brand">
       <div class="glyph" role="presentation" aria-hidden="true"></div>
-      <span>Shoot Workspace</span>
+      <span class="brand-text">Shoot!</span>
     </div>
     <div class="profile" id="profileBar">
       <div class="profile-name" id="profileName">Guest</div>
@@ -23,10 +23,10 @@
       <div class="lobby-header">
         <h1>Welcome back</h1>
         <div class="actions">
-          <button id="newProject" class="with-icon" data-icon="new">New Project</button>
+          <button id="newProject" class="icon-button icon-only with-icon" data-icon="new" title="New project" aria-label="New project"></button>
           <div class="open-area">
             <select id="openProjectSelect"></select>
-            <button id="openProject" class="with-icon" data-icon="open">Open</button>
+            <button id="openProject" class="icon-button icon-only with-icon" data-icon="open" title="Open project" aria-label="Open project"></button>
           </div>
         </div>
       </div>
@@ -43,8 +43,8 @@
       <div class="workspace-header">
         <div class="project-title" id="projectTitle">Untitled Project</div>
         <div class="workspace-actions">
-          <button id="orientationToggle" class="with-icon" data-icon="orientation">Switch Layout</button>
-          <button id="saveProject" class="with-icon" data-icon="save">Save</button>
+          <button id="orientationToggle" class="icon-button icon-only with-icon" data-icon="orientation" title="Switch layout" aria-label="Switch layout"></button>
+          <button id="saveProject" class="icon-button icon-only with-icon" data-icon="save" title="Save project" aria-label="Save project"></button>
         </div>
       </div>
 
@@ -52,15 +52,15 @@
         <aside class="rundown" id="rundownPanel">
           <div class="panel-header">
             <div class="with-icon" data-icon="page">Pages</div>
-            <button id="addPage" class="with-icon" data-icon="new">Add Page</button>
+            <button id="addPage" class="icon-button icon-only with-icon" data-icon="new" title="Add page" aria-label="Add page"></button>
           </div>
           <table class="page-table" id="pageTable">
             <thead>
               <tr>
                 <th>#</th>
                 <th>Title</th>
-                <th>Block</th>
-                <th>Summary</th>
+                <th>Type</th>
+                <th>Synopsis</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -69,28 +69,19 @@
 
         <section class="editor" id="editorPanel">
           <div class="panel-header">
-            <div>Edit Page</div>
-            <div class="muted">Double-click a page to load it</div>
+            <div class="with-icon" data-icon="page">Script Editor</div>
+            <div class="muted">Double-click a page to load it, then type</div>
           </div>
-          <div class="editor-body">
-            <label>Title
-              <input id="pageTitle" type="text" />
-            </label>
-            <label>Block type
-              <select id="blockSelect">
-                <option value="action">Action</option>
-                <option value="character">Character</option>
-                <option value="dialogue">Dialogue</option>
-                <option value="scene">Scene Header</option>
-              </select>
-            </label>
-            <label>Summary/Label
-              <input id="pageSummary" type="text" placeholder="Optional labeling info" />
-            </label>
-            <label>Content
-              <textarea id="pageText" rows="10" placeholder="Write screenplay text here..."></textarea>
-            </label>
+          <div class="script-controls">
+            <div class="script-meta" id="editorMeta">No page loaded</div>
+            <div class="line-type-chips">
+              <button class="chip" data-line-type="scene">Scene</button>
+              <button class="chip" data-line-type="action">Action</button>
+              <button class="chip" data-line-type="character">Character</button>
+              <button class="chip" data-line-type="dialogue">Dialogue</button>
+            </div>
           </div>
+          <div id="scriptEditor" class="script-editor" aria-label="Screenplay text editor"></div>
         </section>
       </div>
 

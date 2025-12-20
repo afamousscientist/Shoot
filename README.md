@@ -23,8 +23,8 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 
 - Lobby screen showing the three most recently accessed projects and quick new/open actions.
 - Profile bar that remembers your display name, plugin toggles, and recent projects.
-- Simple project table view where each row is a page with block type, labels, and text content.
-- Double-click a page to open it in the sidebar editor with screenplay-friendly block choices (action, character, dialogue, scene header).
+- Simple project table view where each row is a page with inline-editable title, type, and synopsis cells.
+- Double-click a page to open it in the sidebar script editor. Start typing to build multiple screenplay blocks (scene headers, action, character, dialogue) with tab-to-character and enter-to-dialogue flows.
 - Toggle sidebar orientation (side-by-side or stacked) with a responsive tool shelf that can collapse.
 - Ctrl/Cmd + S support and Save button for quick persistence to disk.
 - Plugin placeholders per profile that stay enabled/disabled based on user preference.
@@ -39,7 +39,7 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 
 1. Start the app with `npm start` and open [http://localhost:3000](http://localhost:3000) (or replace `localhost` with the LAN IP of your PC on other devices).
 2. In the lobby, create a new project and confirm it appears in the "Recent projects" bar. Open it and verify the page list populates.
-3. Double-click a page row to edit it in the screenplay sidebar. Change the block type, edit the text, and press **Ctrl/Cmd + S** (or click **Save**) to persist. Refresh the page to confirm your edits remain.
+3. Double-click a page row to edit it in the screenplay sidebar. Adjust the title/type/synopsis directly inside the table cells, and type in the script editor using Tab for character lines and Enter for dialogue lines. Press **Ctrl/Cmd + S** (or click **Save**) to persist, then refresh to confirm your edits remain.
 4. Use the orientation toggle to flip between side-by-side and stacked views and check that the toolbar follows the layout.
 5. Toggle plugin placeholders in the toolbar and refresh; your choices should stick per profile.
 

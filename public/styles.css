@@ -51,6 +51,15 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
+.brand-text {
+  font-size: 1.15rem;
+  color: #f0f7ff;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 10px rgba(125, 184, 246, 0.75),
+    0 0 18px rgba(86, 149, 230, 0.55);
+  letter-spacing: 0.05em;
+}
+
 .brand .glyph {
   width: 28px;
   height: 28px;
@@ -145,6 +154,12 @@ button.ghost {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.icon-only {
+  padding: 10px;
+  min-width: 38px;
+  justify-content: center;
 }
 
 .recent-list {
@@ -243,6 +258,22 @@ button.ghost {
 
 .page-table tbody tr:hover {
   background: rgba(125, 184, 246, 0.12);
+}
+
+.page-table tbody tr.active {
+  background: rgba(125, 184, 246, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(125, 184, 246, 0.35);
+}
+
+.editable-cell {
+  position: relative;
+  border-radius: 6px;
+  min-height: 28px;
+}
+
+.editable-cell[contenteditable="true"] {
+  outline: 1px solid rgba(125, 184, 246, 0.65);
+  box-shadow: 0 0 0 3px rgba(125, 184, 246, 0.18);
 }
 
 .editor-body label {
@@ -344,6 +375,106 @@ button[data-icon]::before,
 [data-icon="plugins"]::before { background-image: url('icons/plugins.ico'), url('icons/plugins.svg'); }
 [data-icon="page"]::before { background-image: url('icons/page.ico'), url('icons/page.svg'); }
 [data-icon="app"]::before { background-image: url('icons/app.ico'), url('icons/app.svg'); }
+
+.script-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.script-meta {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.line-type-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.chip.active {
+  border-color: rgba(125, 184, 246, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 0 3px rgba(125, 184, 246, 0.2);
+}
+
+.script-editor {
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  min-height: 320px;
+  padding: 18px 26px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), var(--shadow-strong);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeInPage 180ms ease;
+}
+
+.script-line {
+  outline: none;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  line-height: 1.35;
+  width: min(72ch, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.script-line:focus {
+  background: rgba(125, 184, 246, 0.08);
+  box-shadow: 0 0 0 3px rgba(125, 184, 246, 0.18);
+}
+
+.script-line.scene {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.script-line.action {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.script-line.character {
+  text-transform: uppercase;
+  width: min(40ch, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.script-line.dialogue {
+  width: min(50ch, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+@keyframes fadeInPage {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @media (max-width: 900px) {
   .layout.horizontal {
