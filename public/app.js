@@ -3,7 +3,8 @@ const state = {
   projects: [],
   currentProject: null,
   selectedPageId: null,
-  orientation: 'horizontal'
+  orientation: 'horizontal',
+  noteEdit: null
 };
 
 const els = {
@@ -34,6 +35,8 @@ const els = {
   notePreview: document.getElementById('notePreview'),
   addNoteObject: document.getElementById('addNoteObject'),
   noteLibrary: document.getElementById('noteLibrary'),
+  noteModeStatus: document.getElementById('noteModeStatus'),
+  objectBuilder: document.getElementById('objectBuilder'),
   toolShelf: document.getElementById('toolShelf'),
   collapseToolbar: document.getElementById('collapseToolbar'),
   toolItems: document.querySelectorAll('#toolShelf input[type="checkbox"]'),
@@ -202,6 +205,7 @@ function startCellEdit(cell) {
 function selectPage(pageId) {
   const page = state.currentProject.pages.find(p => p.id === pageId);
   if (!page) return;
+  exitNoteEdit();
   state.selectedPageId = pageId;
   renderPages();
   renderScript(page);
@@ -334,7 +338,7 @@ function renderScript(page) {
   renderDirectorNotes(page);
 }
 
-function buildNoteCard(note) {
+function buildNoteCard(note, context = {}) {
   const card = document.createElement('div');
   card.className = 'note-card';
   card.style.setProperty('--note-color', note.color || '#2b8cff');
@@ -351,6 +355,7 @@ function buildNoteCard(note) {
     e.dataTransfer.setData('application/json', JSON.stringify(note));
     e.dataTransfer.effectAllowed = 'copy';
   });
+  card.addEventListener('dblclick', () => enterNoteEdit(note, context));
   return card;
 }
 
@@ -363,7 +368,7 @@ function renderNotePreview() {
 
 function getNoteDraft() {
   return {
-    id: `note-draft-${Date.now()}`,
+    id: state.noteEdit?.noteId || `note-draft-${Date.now()}`,
     title: els.noteTitle.value.trim() || 'Untitled',
     color: els.noteColor.value || '#2b8cff',
     text: els.noteBody.value.trim()
@@ -381,7 +386,7 @@ function renderNoteLibrary() {
     return;
   }
   notes.forEach(note => {
-    const card = buildNoteCard(note);
+    const card = buildNoteCard(note, { source: 'library' });
     card.dataset.noteId = note.id;
     els.noteLibrary.appendChild(card);
   });
@@ -405,7 +410,7 @@ function renderDirectorNotes(page) {
     return;
   }
   notes.forEach(note => {
-    const card = buildNoteCard(note);
+    const card = buildNoteCard(note, { source: 'director', pageId: page.id });
     els.directorBox.appendChild(card);
   });
 }
@@ -523,6 +528,68 @@ async function saveProfileSettings() {
   els.profileName.textContent = state.profile.userName;
 }
 
+function enterNoteEdit(note, context = { source: 'library', pageId: null }) {
+  state.noteEdit = {
+    source: context.source,
+    pageId: context.pageId || null,
+    noteId: note.id
+  };
+  els.noteTitle.value = note.title || '';
+  els.noteColor.value = note.color || '#2b8cff';
+  els.noteBody.value = note.text || '';
+  els.addNoteObject.textContent = 'Apply changes';
+  els.addNoteObject.classList.add('primary');
+  els.objectBuilder.classList.add('editing');
+  els.noteModeStatus.textContent = `Editing ${context.source === 'director' ? 'director note' : 'toolkit note'}`;
+  els.noteModeStatus.classList.remove('hidden');
+  renderNotePreview();
+}
+
+function exitNoteEdit() {
+  state.noteEdit = null;
+  els.addNoteObject.textContent = 'Save to toolkit';
+  els.addNoteObject.classList.remove('primary');
+  els.objectBuilder.classList.remove('editing');
+  els.noteModeStatus.textContent = '';
+  els.noteModeStatus.classList.add('hidden');
+  renderNotePreview();
+}
+
+function applyNoteEdit(draft) {
+  const context = state.noteEdit;
+  if (!context || !state.currentProject) return;
+  if (context.source === 'library') {
+    const lib = state.currentProject.noteLibrary || [];
+    const target = lib.find(n => n.id === context.noteId);
+    if (target) {
+      target.title = draft.title;
+      target.color = draft.color;
+      target.text = draft.text;
+    } else {
+      lib.push({ ...draft, id: context.noteId || `note-${Date.now()}` });
+    }
+    state.currentProject.noteLibrary = lib;
+    renderNoteLibrary();
+  }
+  if (context.source === 'director') {
+    const page = state.currentProject.pages.find(p => p.id === context.pageId) || getActivePage();
+    if (page) {
+      const notes = page.directorNotes || [];
+      const target = notes.find(n => n.id === context.noteId);
+      if (target) {
+        target.title = draft.title;
+        target.color = draft.color;
+        target.text = draft.text;
+      } else {
+        notes.push({ ...draft, id: context.noteId || `note-${Date.now()}` });
+      }
+      page.directorNotes = notes;
+      renderDirectorNotes(page);
+    }
+  }
+  exitNoteEdit();
+}
+
 function attachTableEditing() {
   els.pageTable.addEventListener('click', e => {
     const cell = e.target.closest('.editable-cell');
@@ -559,6 +626,10 @@ function registerEvents() {
   els.addNoteObject.addEventListener('click', () => {
     if (!state.currentProject) return;
     const draft = getNoteDraft();
+    if (state.noteEdit) {
+      applyNoteEdit(draft);
+      return;
+    }
     const note = { ...draft, id: `note-${Date.now()}` };
     state.currentProject.noteLibrary = state.currentProject.noteLibrary || [];
     state.currentProject.noteLibrary.push(note);

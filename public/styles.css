@@ -160,6 +160,12 @@ button.ghost {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
+button.primary {
+  background: linear-gradient(180deg, #fff3cc 0%, #ffd35d 50%, #f3a500 50%, #c57b00 100%);
+  color: #3a2200;
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
 .icon-button {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05));
   color: var(--text);
@@ -501,6 +507,11 @@ button[data-icon]::before,
   backdrop-filter: blur(8px);
 }
 
+.object-builder.editing {
+  border-color: rgba(255, 217, 102, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 12px rgba(255, 217, 102, 0.35);
+}
+
 .object-builder .panel-header {
   margin-bottom: 8px;
 }
@@ -533,6 +544,14 @@ button[data-icon]::before,
   gap: 12px;
   margin: 8px 0;
   flex-wrap: wrap;
+}
+
+.builder-actions #noteModeStatus {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .note-card {

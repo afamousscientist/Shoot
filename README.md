@@ -26,6 +26,7 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 - Simple project table view where each row is a page with inline-editable title, type, and synopsis cells.
 - Double-click a page to open it in the sidebar script editor. Start typing to build multiple screenplay blocks (scene headers, action, character, dialogue) with tab-to-character and enter-to-dialogue flows.
 - A dedicated director toolkit: build colored instruction cards, drag them into the per-page director box (stored separately from the script), and review them beneath the editor.
+- Double-click any toolkit or director note to edit its title, color, or text in the builder, then apply changes back to the saved card.
 - Rename the active project from the workspace chrome without leaving the editor.
 - Continuous screenplay document feel in the editor (no per-line boxes) while preserving the classic scene/action/character/dialogue alignment.
 - Toggle sidebar orientation (side-by-side or stacked) with a responsive tool shelf that can collapse.
