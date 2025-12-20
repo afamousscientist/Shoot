@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shoot Projects</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="glyph" role="presentation" aria-hidden="true"></div>
+      <span>Shoot Workspace</span>
+    </div>
+    <div class="profile" id="profileBar">
+      <div class="profile-name" id="profileName">Guest</div>
+      <button id="profileSave" class="ghost with-icon" data-icon="profile">Remember Profile</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="lobby" class="panel">
+      <div class="lobby-header">
+        <h1>Welcome back</h1>
+        <div class="actions">
+          <button id="newProject" class="with-icon" data-icon="new">New Project</button>
+          <div class="open-area">
+            <select id="openProjectSelect"></select>
+            <button id="openProject" class="with-icon" data-icon="open">Open</button>
+          </div>
+        </div>
+      </div>
+      <div class="recent-list" id="recentList">
+        <p class="muted">Loading recent projects…</p>
+      </div>
+      <footer class="lobby-footer">
+        <div class="meta with-icon" data-icon="page">Network-ready workspace server</div>
+        <button id="settingsButton" class="icon-button with-icon" data-icon="settings" title="Settings">Settings</button>
+      </footer>
+    </section>
+
+    <section id="workspace" class="panel hidden">
+      <div class="workspace-header">
+        <div class="project-title" id="projectTitle">Untitled Project</div>
+        <div class="workspace-actions">
+          <button id="orientationToggle" class="with-icon" data-icon="orientation">Switch Layout</button>
+          <button id="saveProject" class="with-icon" data-icon="save">Save</button>
+        </div>
+      </div>
+
+      <div id="layout" class="layout horizontal">
+        <aside class="rundown" id="rundownPanel">
+          <div class="panel-header">
+            <div class="with-icon" data-icon="page">Pages</div>
+            <button id="addPage" class="with-icon" data-icon="new">Add Page</button>
+          </div>
+          <table class="page-table" id="pageTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Block</th>
+                <th>Summary</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </aside>
+
+        <section class="editor" id="editorPanel">
+          <div class="panel-header">
+            <div>Edit Page</div>
+            <div class="muted">Double-click a page to load it</div>
+          </div>
+          <div class="editor-body">
+            <label>Title
+              <input id="pageTitle" type="text" />
+            </label>
+            <label>Block type
+              <select id="blockSelect">
+                <option value="action">Action</option>
+                <option value="character">Character</option>
+                <option value="dialogue">Dialogue</option>
+                <option value="scene">Scene Header</option>
+              </select>
+            </label>
+            <label>Summary/Label
+              <input id="pageSummary" type="text" placeholder="Optional labeling info" />
+            </label>
+            <label>Content
+              <textarea id="pageText" rows="10" placeholder="Write screenplay text here..."></textarea>
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <div id="toolShelf" class="toolbar">
+        <button id="collapseToolbar" class="ghost">Hide tools</button>
+        <div class="tool-items">
+          <label><input type="checkbox" data-plugin="breakdownHelper" checked /> Breakdown helper</label>
+          <label><input type="checkbox" data-plugin="revisionTracker" checked /> Revision tracker</label>
+          <label><input type="checkbox" data-plugin="referenceLinks" /> Reference links</label>
+        </div>
+      </div>
+    </section>
+
+    <section id="settings" class="panel hidden">
+      <h2>Profile Settings</h2>
+      <label>Display name
+        <input id="profileInput" type="text" />
+      </label>
+      <div class="muted small">Settings are saved to your profile and follow you across the network.</div>
+      <div class="settings-actions">
+        <button id="saveSettings">Save Settings</button>
+        <button id="closeSettings" class="ghost">Close</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
