@@ -25,6 +25,7 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 - Profile bar that remembers your display name, plugin toggles, and recent projects.
 - Simple project table view where each row is a page with inline-editable title, type, and synopsis cells.
 - Double-click a page to open it in the sidebar script editor. Start typing to build multiple screenplay blocks (scene headers, action, character, dialogue) with tab-to-character and enter-to-dialogue flows.
+- A dedicated director toolkit: build colored instruction cards, drag them into the per-page director box (stored separately from the script), and review them beneath the editor.
 - Rename the active project from the workspace chrome without leaving the editor.
 - Continuous screenplay document feel in the editor (no per-line boxes) while preserving the classic scene/action/character/dialogue alignment.
 - Toggle sidebar orientation (side-by-side or stacked) with a responsive tool shelf that can collapse.
@@ -34,7 +35,7 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 ### Vista look and icon pack
 
 - The UI now uses a glassy Windows Vista-inspired palette (soft blues, gradients, and Segoe UI typography).
-- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` using these filenames: `app`, `profile`, `new`, `open`, `save`, `settings`, `orientation`, `rename`, `plugins`, and `page` (e.g., `new.ico` or `new.svg`).
+- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` using these filenames: `app`, `profile`, `new`, `open`, `save`, `settings`, `orientation`, `rename`, `plugins`, `page`, `note`, and `add` (e.g., `new.ico` or `new.svg`).
 - If you cannot add binaries, paste data URIs into `public/icons/overrides.css` to point the CSS variables at your icon sources without checking assets in.
 
 ## How to test it now

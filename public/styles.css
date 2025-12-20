@@ -22,6 +22,8 @@
   --icon-profile-src: url('icons/profile.ico'), url('icons/profile.svg'), var(--icon-fallback);
   --icon-plugins-src: url('icons/plugins.ico'), url('icons/plugins.svg'), var(--icon-fallback);
   --icon-page-src: url('icons/page.ico'), url('icons/page.svg'), var(--icon-fallback);
+  --icon-note-src: url('icons/note.ico'), url('icons/note.svg'), var(--icon-fallback);
+  --icon-add-src: url('icons/add.ico'), url('icons/add.svg'), var(--icon-fallback);
   --font: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
   --shadow-strong: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
@@ -386,6 +388,8 @@ button[data-icon]::before,
 [data-icon="profile"]::before { background-image: var(--icon-profile-src); }
 [data-icon="plugins"]::before { background-image: var(--icon-plugins-src); }
 [data-icon="page"]::before { background-image: var(--icon-page-src); }
+[data-icon="note"]::before { background-image: var(--icon-note-src); }
+[data-icon="add"]::before { background-image: var(--icon-add-src); }
 [data-icon="app"]::before { background-image: var(--icon-app-src); }
 
 .script-controls {
@@ -485,6 +489,128 @@ button[data-icon]::before,
   text-align: center;
   margin-left: 110px;
   margin-right: 170px;
+}
+
+.object-builder {
+  margin-top: 16px;
+  background: var(--panel-glass);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), var(--shadow-strong);
+  backdrop-filter: blur(8px);
+}
+
+.object-builder .panel-header {
+  margin-bottom: 8px;
+}
+
+.builder-grid {
+  display: grid;
+  grid-template-columns: 1fr 140px;
+  gap: 10px;
+}
+
+.builder-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.95rem;
+}
+
+.builder-grid textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.builder-preview {
+  margin-top: 8px;
+}
+
+.builder-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+
+.note-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  margin-top: 6px;
+  cursor: grab;
+}
+
+.note-card:active {
+  cursor: grabbing;
+}
+
+.note-card .note-title {
+  background: linear-gradient(90deg, var(--note-color, #2b8cff), rgba(255, 255, 255, 0));
+  color: #0a1a33;
+  font-weight: 700;
+  padding: 8px 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.note-card .note-body {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #e9f0ff;
+  line-height: 1.4;
+}
+
+.note-library {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+  max-height: 200px;
+  overflow: auto;
+  padding-top: 4px;
+}
+
+.director-panel {
+  margin-top: 14px;
+}
+
+.director-box {
+  margin-top: 8px;
+  min-height: 140px;
+  background: #ffffff;
+  color: #000000;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 16px 40px rgba(0, 0, 0, 0.25);
+  padding: 12px;
+  font-family: 'Courier New', Courier, monospace;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.director-box .note-card {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #000000;
+}
+
+.director-box .note-title {
+  color: #0a0a0a;
+}
+
+.director-box .note-body {
+  color: #111;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.director-box.dragging {
+  outline: 2px dashed #2b8cff;
+  outline-offset: 4px;
 }
 
 @keyframes fadeInPage {

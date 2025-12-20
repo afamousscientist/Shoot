@@ -28,18 +28,26 @@ const els = {
   addPage: document.getElementById('addPage'),
   pageTable: document.getElementById('pageTable').querySelector('tbody'),
   saveProject: document.getElementById('saveProject'),
+  noteTitle: document.getElementById('noteTitle'),
+  noteColor: document.getElementById('noteColor'),
+  noteBody: document.getElementById('noteBody'),
+  notePreview: document.getElementById('notePreview'),
+  addNoteObject: document.getElementById('addNoteObject'),
+  noteLibrary: document.getElementById('noteLibrary'),
   toolShelf: document.getElementById('toolShelf'),
   collapseToolbar: document.getElementById('collapseToolbar'),
   toolItems: document.querySelectorAll('#toolShelf input[type="checkbox"]'),
   scriptEditor: document.getElementById('scriptEditor'),
   editorMeta: document.getElementById('editorMeta'),
-  lineTypeButtons: document.querySelectorAll('[data-line-type]')
+  lineTypeButtons: document.querySelectorAll('[data-line-type]'),
+  directorBox: document.getElementById('directorBox')
 };
 
 function normalizePageShape(page) {
   const normalized = { ...page };
   normalized.type = normalized.type || normalized.block || 'Shot';
   normalized.synopsis = normalized.synopsis ?? normalized.summary ?? '';
+   normalized.directorNotes = Array.isArray(normalized.directorNotes) ? normalized.directorNotes : [];
   if (!Array.isArray(normalized.blocks)) {
     const seedText = (normalized.text || '').split('\n').filter(line => line !== '');
     const defaultType = normalized.block || 'action';
@@ -50,6 +58,14 @@ function normalizePageShape(page) {
     }));
   }
   return normalized;
+}
+
+function normalizeProjectShape(project) {
+  return {
+    ...project,
+    noteLibrary: Array.isArray(project.noteLibrary) ? project.noteLibrary : [],
+    pages: project.pages.map(normalizePageShape)
+  };
 }
 
 async function fetchJson(url, options = {}) {
@@ -72,10 +88,7 @@ async function loadProfile() {
 
 async function loadProjects() {
   state.projects = await fetchJson('/api/projects');
-  state.projects = state.projects.map(project => ({
-    ...project,
-    pages: project.pages.map(normalizePageShape)
-  }));
+  state.projects = state.projects.map(normalizeProjectShape);
   renderProjectSelect();
   renderRecent();
 }
@@ -299,7 +312,10 @@ function renderScript(page) {
   els.scriptEditor.innerHTML = '';
   els.editorMeta.textContent = page ? `${page.title} • ${page.type}` : 'No page loaded';
   els.scriptEditor.dataset.pageId = page?.id || '';
-  if (!page) return;
+  if (!page) {
+    renderDirectorNotes(null);
+    return;
+  }
   if (!page.blocks || !page.blocks.length) {
     page.blocks = [
       { id: `blk-${page.id}-0`, type: 'scene', text: 'INT. LOCATION - DAY' },
@@ -315,6 +331,110 @@ function renderScript(page) {
     placeCaret(firstLine, firstLine.textContent.length);
   }
   syncLinesToPage(page);
+  renderDirectorNotes(page);
+}
+
+function buildNoteCard(note) {
+  const card = document.createElement('div');
+  card.className = 'note-card';
+  card.style.setProperty('--note-color', note.color || '#2b8cff');
+  const title = document.createElement('div');
+  title.className = 'note-title';
+  title.textContent = note.title || 'Untitled';
+  const body = document.createElement('div');
+  body.className = 'note-body';
+  body.textContent = note.text || '';
+  card.appendChild(title);
+  card.appendChild(body);
+  card.draggable = true;
+  card.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('application/json', JSON.stringify(note));
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+  return card;
+}
+
+function renderNotePreview() {
+  const draft = getNoteDraft();
+  els.notePreview.innerHTML = '';
+  const card = buildNoteCard(draft);
+  els.notePreview.appendChild(card);
+}
+
+function getNoteDraft() {
+  return {
+    id: `note-draft-${Date.now()}`,
+    title: els.noteTitle.value.trim() || 'Untitled',
+    color: els.noteColor.value || '#2b8cff',
+    text: els.noteBody.value.trim()
+  };
+}
+
+function renderNoteLibrary() {
+  els.noteLibrary.innerHTML = '';
+  const notes = state.currentProject?.noteLibrary || [];
+  if (!notes.length) {
+    const empty = document.createElement('div');
+    empty.className = 'muted small';
+    empty.textContent = 'Saved toolkit notes appear here';
+    els.noteLibrary.appendChild(empty);
+    return;
+  }
+  notes.forEach(note => {
+    const card = buildNoteCard(note);
+    card.dataset.noteId = note.id;
+    els.noteLibrary.appendChild(card);
+  });
+}
+
+function renderDirectorNotes(page) {
+  els.directorBox.innerHTML = '';
+  if (!page) {
+    const empty = document.createElement('div');
+    empty.className = 'muted small';
+    empty.textContent = 'Select a page to attach director notes.';
+    els.directorBox.appendChild(empty);
+    return;
+  }
+  const notes = page.directorNotes || [];
+  if (!notes.length) {
+    const empty = document.createElement('div');
+    empty.className = 'muted small';
+    empty.textContent = 'Drag toolkit notes or the preview here to attach to this page.';
+    els.directorBox.appendChild(empty);
+    return;
+  }
+  notes.forEach(note => {
+    const card = buildNoteCard(note);
+    els.directorBox.appendChild(card);
+  });
+}
+
+function attachNoteToPage(note) {
+  const page = getActivePage();
+  if (!page) return;
+  const incoming = {
+    id: note.id || `note-${Date.now()}`,
+    title: note.title || 'Untitled',
+    color: note.color || '#2b8cff',
+    text: note.text || ''
+  };
+  page.directorNotes = page.directorNotes || [];
+  page.directorNotes.push(incoming);
+  renderDirectorNotes(page);
+}
+
+function handleDirectorDrop(e) {
+  e.preventDefault();
+  els.directorBox.classList.remove('dragging');
+  const payload = e.dataTransfer.getData('application/json');
+  if (!payload) return;
+  try {
+    const note = JSON.parse(payload);
+    attachNoteToPage(note);
+  } catch (err) {
+    console.error('Invalid note payload', err);
+  }
 }
 
 async function saveProject() {
@@ -337,7 +457,7 @@ async function saveProject() {
 
 async function createProject() {
   const project = await fetchJson('/api/projects', { method: 'POST', body: JSON.stringify({ name: 'New Project' }) });
-  const normalized = { ...project, pages: project.pages.map(normalizePageShape) };
+  const normalized = normalizeProjectShape(project);
   state.projects.push(normalized);
   await loadProfile();
   renderProjectSelect();
@@ -348,12 +468,13 @@ async function createProject() {
 async function openProjectById(id) {
   if (!id) return;
   const project = await fetchJson(`/api/projects/${id}`);
-  const normalized = { ...project, pages: project.pages.map(normalizePageShape) };
+  const normalized = normalizeProjectShape(project);
   state.currentProject = normalized;
   state.selectedPageId = normalized.pages[0]?.id || null;
   els.projectTitle.textContent = normalized.name;
   const existing = state.projects.findIndex(p => p.id === normalized.id);
   if (existing !== -1) state.projects[existing] = normalized;
+  renderNoteLibrary();
   renderPages();
   selectPage(state.selectedPageId);
   showSection('workspace');
@@ -368,6 +489,7 @@ function addPage() {
     title: `Page ${state.currentProject.pages.length + 1}`,
     type: 'Shot',
     synopsis: '',
+    directorNotes: [],
     blocks: [
       { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },
       { id: `blk-${Date.now()}-action`, type: 'action', text: '' }
@@ -431,6 +553,18 @@ function registerEvents() {
   els.addPage.addEventListener('click', addPage);
   els.orientationToggle.addEventListener('click', toggleOrientation);
   els.saveProject.addEventListener('click', saveProject);
+  [els.noteTitle, els.noteColor, els.noteBody].forEach(input => {
+    input.addEventListener('input', renderNotePreview);
+  });
+  els.addNoteObject.addEventListener('click', () => {
+    if (!state.currentProject) return;
+    const draft = getNoteDraft();
+    const note = { ...draft, id: `note-${Date.now()}` };
+    state.currentProject.noteLibrary = state.currentProject.noteLibrary || [];
+    state.currentProject.noteLibrary.push(note);
+    renderNoteLibrary();
+    renderNotePreview();
+  });
   els.renameProject.addEventListener('click', async () => {
     if (!state.currentProject) return;
     const newName = prompt('Rename project', state.currentProject.name || 'Untitled');
@@ -510,12 +644,23 @@ function registerEvents() {
     if (line) highlightChip(line.dataset.type || 'action');
   });
 
+  els.directorBox.addEventListener('dragover', e => {
+    e.preventDefault();
+    els.directorBox.classList.add('dragging');
+  });
+  els.directorBox.addEventListener('dragleave', () => {
+    els.directorBox.classList.remove('dragging');
+  });
+  els.directorBox.addEventListener('drop', handleDirectorDrop);
+
   window.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       saveProject();
     }
   });
+
+  renderNotePreview();
 }
 
 async function init() {
