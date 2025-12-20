@@ -1,0 +1,9 @@
+{
+  "userName": "Guest",
+  "recentProjects": [],
+  "plugins": {
+    "breakdownHelper": true,
+    "revisionTracker": true,
+    "referenceLinks": false
+  }
+}

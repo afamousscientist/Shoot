@@ -1,0 +1,10 @@
+{
+  "name": "shoot",
+  "version": "1.0.0",
+  "description": "Simple network-accessible project lobby and screenplay editor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
