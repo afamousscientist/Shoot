@@ -194,72 +194,53 @@ function selectPage(pageId) {
   renderScript(page);
 }
 
-let activeLineId = null;
-
-function enforceCapitalization(line) {
-  if (line.dataset.type === 'scene' || line.dataset.type === 'character') {
-    line.textContent = line.textContent.toUpperCase();
-  }
+function getActivePage() {
+  if (!state.currentProject || !state.selectedPageId) return null;
+  return state.currentProject.pages.find(p => p.id === state.selectedPageId) || null;
 }
 
-function setLineType(line, type) {
-  line.dataset.type = type;
-  line.className = `script-line ${type}`;
-  enforceCapitalization(line);
-  highlightChip(type);
-  captureScriptToState();
+function getCaretLineIndex() {
+  const pos = els.scriptEditor.selectionStart || 0;
+  const untilCaret = els.scriptEditor.value.slice(0, pos);
+  return untilCaret.split('\n').length - 1;
 }
 
-function insertLineAfter(line, type = 'action') {
-  const newLine = document.createElement('div');
-  newLine.className = `script-line ${type}`;
-  newLine.dataset.type = type;
-  newLine.dataset.blockId = `blk-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  newLine.contentEditable = 'true';
-  newLine.textContent = '';
-  wireLineEvents(newLine);
-  line.after(newLine);
-  newLine.focus();
-  captureScriptToState();
-}
-
-function handleLineKeydown(e, line) {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    const order = ['scene', 'action', 'character', 'dialogue'];
-    const idx = order.indexOf(line.dataset.type);
-    const nextType = order[(idx + 1) % order.length];
-    setLineType(line, nextType);
-  }
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const nextType = line.dataset.type === 'character' ? 'dialogue' : 'action';
-    insertLineAfter(line, nextType);
-  }
-}
-
-function wireLineEvents(line) {
-  line.addEventListener('focus', () => {
-    activeLineId = line.dataset.blockId;
-    highlightChip(line.dataset.type);
+function normalizeBlocksFromText(page) {
+  const selection = [els.scriptEditor.selectionStart, els.scriptEditor.selectionEnd];
+  const lines = els.scriptEditor.value.replace(/\r/g, '').split('\n');
+  const normalizedLines = [...lines];
+  const prev = Array.isArray(page.blocks) ? page.blocks : [];
+  const blocks = [];
+  lines.forEach((text, idx) => {
+    const existing = prev[idx];
+    const previousType = idx > 0 ? (blocks[idx - 1]?.type || prev[idx - 1]?.type) : null;
+    let type = existing?.type || prev[idx]?.type;
+    if (!type) {
+      if (idx === 0) type = 'scene';
+      else if (previousType === 'character') type = 'dialogue';
+      else type = 'action';
+    }
+    const normalizedText = (type === 'scene' || type === 'character') ? (text || '').toUpperCase() : text || '';
+    normalizedLines[idx] = normalizedText;
+    blocks.push({
+      id: existing?.id || prev[idx]?.id || `blk-${page.id}-${idx}`,
+      type,
+      text: normalizedText
+    });
   });
-  line.addEventListener('input', () => {
-    enforceCapitalization(line);
-    captureScriptToState();
-  });
-  line.addEventListener('keydown', e => handleLineKeydown(e, line));
+  page.blocks = blocks;
+  const refreshed = normalizedLines.join('\n');
+  if (refreshed !== els.scriptEditor.value.replace(/\r/g, '')) {
+    els.scriptEditor.value = refreshed;
+    els.scriptEditor.setSelectionRange(selection[0], selection[1]);
+  }
 }
 
 function captureScriptToState() {
   if (!state.currentProject || !state.selectedPageId) return;
   const page = state.currentProject.pages.find(p => p.id === state.selectedPageId);
   if (!page) return;
-  const blocks = Array.from(els.scriptEditor.querySelectorAll('.script-line')).map(line => ({
-    id: line.dataset.blockId,
-    type: line.dataset.type,
-    text: line.textContent.trim()
-  }));
-  page.blocks = blocks;
+  normalizeBlocksFromText(page);
 }
 
 function highlightChip(type) {
@@ -269,37 +250,23 @@ function highlightChip(type) {
 }
 
 function renderScript(page) {
-  els.scriptEditor.innerHTML = '';
+  els.scriptEditor.value = '';
   els.editorMeta.textContent = page ? `${page.title} • ${page.type}` : 'No page loaded';
-  if (!page) {
-    const empty = document.createElement('div');
-    empty.className = 'muted';
-    empty.textContent = 'Double-click a page to start writing.';
-    els.scriptEditor.appendChild(empty);
-    return;
-  }
+  els.scriptEditor.placeholder = page ? '' : 'Double-click a page to start writing.';
+  if (!page) return;
   if (!page.blocks || !page.blocks.length) {
     page.blocks = [
       { id: `blk-${page.id}-0`, type: 'scene', text: 'INT. LOCATION - DAY' },
       { id: `blk-${page.id}-1`, type: 'action', text: '' }
     ];
   }
-  page.blocks.forEach(block => {
-    const line = document.createElement('div');
-    line.className = `script-line ${block.type}`;
-    line.dataset.type = block.type;
-    line.dataset.blockId = block.id || `blk-${page.id}-${Math.random().toString(16).slice(2)}`;
-    line.contentEditable = 'true';
-    line.textContent = block.type === 'scene' || block.type === 'character'
-      ? (block.text || '').toUpperCase()
-      : block.text || '';
-    wireLineEvents(line);
-    els.scriptEditor.appendChild(line);
-  });
-  const firstLine = els.scriptEditor.querySelector('.script-line');
-  if (firstLine) {
-    firstLine.focus();
-  }
+  els.scriptEditor.value = page.blocks.map(block => {
+    if (block.type === 'scene' || block.type === 'character') {
+      return (block.text || '').toUpperCase();
+    }
+    return block.text || '';
+  }).join('\n');
+  highlightChip(page.blocks[0]?.type || 'scene');
   captureScriptToState();
 }
 
@@ -434,20 +401,50 @@ function registerEvents() {
 
   els.lineTypeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const type = btn.dataset.lineType;
-      const activeLine = activeLineId
-        ? els.scriptEditor.querySelector(`[data-block-id="${activeLineId}"]`)
-        : els.scriptEditor.querySelector('.script-line');
-      if (activeLine) {
-        setLineType(activeLine, type);
-      }
+      const page = getActivePage();
+      if (!page) return;
+      captureScriptToState();
+      const idx = getCaretLineIndex();
+      if (!page.blocks[idx]) return;
+      page.blocks[idx].type = btn.dataset.lineType;
+      highlightChip(btn.dataset.lineType);
+      captureScriptToState();
     });
   });
 
-  els.scriptEditor.addEventListener('click', e => {
-    const line = e.target.closest('.script-line');
-    if (line) {
-      line.focus();
+  els.scriptEditor.addEventListener('input', () => {
+    captureScriptToState();
+    const page = getActivePage();
+    const idx = getCaretLineIndex();
+    if (page && page.blocks[idx]) {
+      highlightChip(page.blocks[idx].type);
+    }
+  });
+
+  els.scriptEditor.addEventListener('keydown', e => {
+    const page = getActivePage();
+    if (!page) return;
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      captureScriptToState();
+      const idx = getCaretLineIndex();
+      const current = page.blocks[idx];
+      if (!current) return;
+      const order = ['scene', 'action', 'character', 'dialogue'];
+      const curIdx = order.indexOf(current.type);
+      const nextType = order[(curIdx + 1) % order.length];
+      current.type = nextType;
+      highlightChip(nextType);
+      captureScriptToState();
+    }
+  });
+
+  els.scriptEditor.addEventListener('keyup', () => {
+    const page = getActivePage();
+    if (!page) return;
+    const idx = getCaretLineIndex();
+    if (page.blocks[idx]) {
+      highlightChip(page.blocks[idx].type);
     }
   });
 
