@@ -32,7 +32,6 @@ const els = {
   collapseToolbar: document.getElementById('collapseToolbar'),
   toolItems: document.querySelectorAll('#toolShelf input[type="checkbox"]'),
   scriptEditor: document.getElementById('scriptEditor'),
-  scriptGuide: document.getElementById('scriptGuide'),
   editorMeta: document.getElementById('editorMeta'),
   lineTypeButtons: document.querySelectorAll('[data-line-type]')
 };
@@ -200,51 +199,94 @@ function getActivePage() {
   return state.currentProject.pages.find(p => p.id === state.selectedPageId) || null;
 }
 
-function getCaretLineIndex() {
-  const pos = els.scriptEditor.selectionStart || 0;
-  const untilCaret = els.scriptEditor.value.slice(0, pos);
-  return untilCaret.split('\n').length - 1;
+function getLineElements() {
+  return Array.from(els.scriptEditor.querySelectorAll('.script-line'));
 }
 
-function normalizeBlocksFromText(page) {
-  const selection = [els.scriptEditor.selectionStart, els.scriptEditor.selectionEnd];
-  const lines = els.scriptEditor.value.replace(/\r/g, '').split('\n');
-  const normalizedLines = [...lines];
-  const prev = Array.isArray(page.blocks) ? page.blocks : [];
-  const blocks = [];
-  lines.forEach((text, idx) => {
-    const existing = prev[idx];
-    const previousType = idx > 0 ? (blocks[idx - 1]?.type || prev[idx - 1]?.type) : null;
-    let type = existing?.type || prev[idx]?.type;
-    if (!type) {
-      if (idx === 0) type = 'scene';
-      else if (previousType === 'scene') type = 'action';
-      else if (previousType === 'character') type = 'dialogue';
-      else type = previousType || 'action';
+function getFocusedLine() {
+  const selection = window.getSelection();
+  let node = selection?.focusNode || null;
+  while (node && node !== els.scriptEditor && !(node.classList && node.classList.contains('script-line'))) {
+    node = node.parentNode;
+  }
+  if (node && node.classList && node.classList.contains('script-line')) return node;
+  return getLineElements()[0] || null;
+}
+
+function getCaretLineIndex() {
+  const line = getFocusedLine();
+  return line ? lineIndex(line) : 0;
+}
+
+function lineIndex(line) {
+  return getLineElements().indexOf(line);
+}
+
+function placeCaret(line, offset = null) {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  let targetNode = line.firstChild;
+  if (!targetNode) {
+    targetNode = document.createTextNode('');
+    line.appendChild(targetNode);
+  }
+  const targetOffset = offset === null ? targetNode.length : Math.min(offset, targetNode.length);
+  range.setStart(targetNode, targetOffset);
+  range.setEnd(targetNode, targetOffset);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function updateLineAppearance(line, type) {
+  line.dataset.type = type;
+  line.className = `script-line line-${type}`;
+}
+
+function createLine(block) {
+  const line = document.createElement('div');
+  updateLineAppearance(line, block.type || 'action');
+  line.dataset.lineId = block.id || '';
+  line.contentEditable = true;
+  line.textContent = block.type === 'scene' || block.type === 'character'
+    ? (block.text || '').toUpperCase()
+    : (block.text || '');
+  return line;
+}
+
+function syncLinesToPage(page) {
+  if (!page) return;
+  const lines = getLineElements();
+  const focusedLine = getFocusedLine();
+  const focusedIndex = focusedLine ? lineIndex(focusedLine) : 0;
+  const focusedOffset = window.getSelection()?.focusOffset || 0;
+  const blocks = lines.map((line, idx) => {
+    const type = line.dataset.type || 'action';
+    const rawText = line.textContent || '';
+    const normalizedText = (type === 'scene' || type === 'character') ? rawText.toUpperCase() : rawText;
+    if (normalizedText !== rawText) {
+      line.textContent = normalizedText;
     }
-    const normalizedText = (type === 'scene' || type === 'character') ? (text || '').toUpperCase() : text || '';
-    normalizedLines[idx] = normalizedText;
-    blocks.push({
-      id: existing?.id || prev[idx]?.id || `blk-${page.id}-${idx}`,
+    updateLineAppearance(line, type);
+    return {
+      id: line.dataset.lineId || page.blocks?.[idx]?.id || `blk-${page.id}-${idx}`,
       type,
       text: normalizedText
-    });
+    };
   });
   page.blocks = blocks;
-  const refreshed = normalizedLines.join('\n');
-  if (refreshed !== els.scriptEditor.value.replace(/\r/g, '')) {
-    els.scriptEditor.value = refreshed;
-    els.scriptEditor.setSelectionRange(selection[0], selection[1]);
+  const activeLine = getLineElements()[focusedIndex] || getLineElements()[0];
+  if (activeLine) {
+    const safeOffset = Math.min(focusedOffset, activeLine.textContent.length);
+    placeCaret(activeLine, safeOffset);
+    highlightChip(activeLine.dataset.type || 'action');
   }
-
-  renderGuide(page);
 }
 
 function captureScriptToState() {
   if (!state.currentProject || !state.selectedPageId) return;
   const page = state.currentProject.pages.find(p => p.id === state.selectedPageId);
   if (!page) return;
-  normalizeBlocksFromText(page);
+  syncLinesToPage(page);
 }
 
 function highlightChip(type) {
@@ -253,33 +295,10 @@ function highlightChip(type) {
   });
 }
 
-function escapeHtml(text = '') {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function renderGuide(page) {
-  if (!page || !page.blocks) {
-    els.scriptGuide.innerHTML = '';
-    return;
-  }
-  const guide = page.blocks.map(block => {
-    const type = block.type || 'action';
-    const cls = `guide-line line-${type}`;
-    const text = (type === 'scene' || type === 'character') ? (block.text || '').toUpperCase() : (block.text || '');
-    return `<div class="${cls}">${escapeHtml(text) || '&nbsp;'}</div>`;
-  }).join('');
-  els.scriptGuide.innerHTML = guide;
-}
-
 function renderScript(page) {
-  els.scriptEditor.value = '';
-  els.scriptGuide.innerHTML = '';
+  els.scriptEditor.innerHTML = '';
   els.editorMeta.textContent = page ? `${page.title} • ${page.type}` : 'No page loaded';
-  els.scriptEditor.placeholder = page ? '' : 'Double-click a page to start writing.';
+  els.scriptEditor.dataset.pageId = page?.id || '';
   if (!page) return;
   if (!page.blocks || !page.blocks.length) {
     page.blocks = [
@@ -287,15 +306,15 @@ function renderScript(page) {
       { id: `blk-${page.id}-1`, type: 'action', text: '' }
     ];
   }
-  els.scriptEditor.value = page.blocks.map(block => {
-    if (block.type === 'scene' || block.type === 'character') {
-      return (block.text || '').toUpperCase();
-    }
-    return block.text || '';
-  }).join('\n');
-  highlightChip(page.blocks[0]?.type || 'scene');
-  captureScriptToState();
-  renderGuide(page);
+  page.blocks.forEach(block => {
+    els.scriptEditor.appendChild(createLine(block));
+  });
+  const firstLine = getLineElements()[0];
+  if (firstLine) {
+    highlightChip(firstLine.dataset.type || 'scene');
+    placeCaret(firstLine, firstLine.textContent.length);
+  }
+  syncLinesToPage(page);
 }
 
 async function saveProject() {
@@ -430,57 +449,65 @@ function registerEvents() {
   els.lineTypeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const page = getActivePage();
-      if (!page) return;
+      const line = getFocusedLine();
+      if (!page || !line) return;
+      updateLineAppearance(line, btn.dataset.lineType);
       captureScriptToState();
-      const idx = getCaretLineIndex();
-      if (!page.blocks[idx]) return;
-      page.blocks[idx].type = btn.dataset.lineType;
       highlightChip(btn.dataset.lineType);
-      captureScriptToState();
     });
   });
 
   els.scriptEditor.addEventListener('input', () => {
-    captureScriptToState();
     const page = getActivePage();
-    const idx = getCaretLineIndex();
-    if (page && page.blocks[idx]) {
-      highlightChip(page.blocks[idx].type);
-      renderGuide(page);
-    }
+    if (!page) return;
+    captureScriptToState();
   });
 
   els.scriptEditor.addEventListener('keydown', e => {
     const page = getActivePage();
-    if (!page) return;
-    if (e.key === 'Tab') {
+    const line = getFocusedLine();
+    if (!page || !line) return;
+
+    if (e.key === 'Enter') {
       e.preventDefault();
       captureScriptToState();
-      const idx = getCaretLineIndex();
-      const current = page.blocks[idx];
-      if (!current) return;
+      const currentType = line.dataset.type || 'action';
+      let nextType = 'action';
+      if (currentType === 'scene') nextType = 'action';
+      else if (currentType === 'character') nextType = 'dialogue';
+      const newLine = createLine({ id: `blk-${page.id}-${Date.now()}`, type: nextType, text: '' });
+      line.insertAdjacentElement('afterend', newLine);
+      captureScriptToState();
+      placeCaret(newLine, 0);
+      highlightChip(nextType);
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
       const order = ['scene', 'action', 'character', 'dialogue'];
-      const curIdx = order.indexOf(current.type);
+      const curIdx = order.indexOf(line.dataset.type || 'action');
       let nextType;
-      if (current.type === 'action') {
+      if (line.dataset.type === 'action') {
         nextType = 'character';
       } else {
         nextType = order[(curIdx + 1) % order.length];
       }
-      current.type = nextType;
-      highlightChip(nextType);
+      updateLineAppearance(line, nextType);
       captureScriptToState();
+      highlightChip(nextType);
     }
   });
 
   els.scriptEditor.addEventListener('keyup', () => {
     const page = getActivePage();
-    if (!page) return;
-    const idx = getCaretLineIndex();
-    if (page.blocks[idx]) {
-      highlightChip(page.blocks[idx].type);
-      renderGuide(page);
-    }
+    const line = getFocusedLine();
+    if (!page || !line) return;
+    highlightChip(line.dataset.type || 'action');
+  });
+
+  els.scriptEditor.addEventListener('click', () => {
+    const line = getFocusedLine();
+    if (line) highlightChip(line.dataset.type || 'action');
   });
 
   window.addEventListener('keydown', e => {

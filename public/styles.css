@@ -433,19 +433,15 @@ button[data-icon]::before,
   line-height: 1.45;
   width: 100%;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  color: transparent;
+  color: rgba(239, 246, 255, 0.95);
   caret-color: #f5fbff;
   backdrop-filter: blur(6px);
-  resize: none;
   outline: none;
-  white-space: pre-wrap;
-  position: relative;
   background-color: transparent;
   z-index: 1;
-}
-
-.script-editor::placeholder {
-  color: #91a6c9;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .script-editor-shell {
@@ -453,38 +449,31 @@ button[data-icon]::before,
   min-height: 320px;
 }
 
-.script-guide {
-  position: absolute;
-  inset: 0;
-  padding: 18px 26px;
-  pointer-events: none;
-  white-space: pre-wrap;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.78);
-  opacity: 0.92;
-  overflow: hidden;
-  z-index: 0;
+.script-editor:empty::before {
+  content: 'Double-click a page to start writing.';
+  color: #91a6c9;
 }
 
-.guide-line {
-  display: block;
+.script-line {
+  min-height: 1.45em;
   padding: 2px 0;
+  outline: none;
+  white-space: pre-wrap;
 }
 
-.line-scene {
+.script-line.line-scene {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-left: 0;
   margin-right: 0;
 }
 
-.line-action {
+.script-line.line-action {
   margin-left: 20px;
   margin-right: 120px;
 }
 
-.line-character {
+.script-line.line-character {
   text-transform: uppercase;
   text-align: center;
   margin-left: 140px;
@@ -492,17 +481,10 @@ button[data-icon]::before,
   letter-spacing: 0.08em;
 }
 
-.line-dialogue {
+.script-line.line-dialogue {
   text-align: center;
   margin-left: 110px;
   margin-right: 170px;
-}
-
-.script-guide .line-scene,
-.script-guide .line-action,
-.script-guide .line-character,
-.script-guide .line-dialogue {
-  width: calc(100% - 40px);
 }
 
 @keyframes fadeInPage {
