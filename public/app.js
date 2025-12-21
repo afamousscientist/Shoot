@@ -23,6 +23,7 @@ const els = {
   openSelect: document.getElementById('openProjectSelect'),
   recentList: document.getElementById('recentList'),
   projectTitle: document.getElementById('projectTitle'),
+  headerProjectTitle: document.getElementById('headerProjectTitle'),
   renameProject: document.getElementById('renameProject'),
   layout: document.getElementById('layout'),
   orientationToggle: document.getElementById('orientationToggle'),
@@ -45,6 +46,13 @@ const els = {
   lineTypeButtons: document.querySelectorAll('[data-line-type]'),
   directorBox: document.getElementById('directorBox')
 };
+
+function setProjectTitle(name = 'No project loaded') {
+  els.projectTitle.textContent = name;
+  els.headerProjectTitle.textContent = name;
+}
+
+setProjectTitle(els.projectTitle.textContent || 'No project loaded');
 
 function normalizePageShape(page) {
   const normalized = { ...page };
@@ -476,7 +484,7 @@ async function openProjectById(id) {
   const normalized = normalizeProjectShape(project);
   state.currentProject = normalized;
   state.selectedPageId = normalized.pages[0]?.id || null;
-  els.projectTitle.textContent = normalized.name;
+  setProjectTitle(normalized.name);
   const existing = state.projects.findIndex(p => p.id === normalized.id);
   if (existing !== -1) state.projects[existing] = normalized;
   renderNoteLibrary();
@@ -641,7 +649,7 @@ function registerEvents() {
     const newName = prompt('Rename project', state.currentProject.name || 'Untitled');
     if (!newName || !newName.trim()) return;
     state.currentProject.name = newName.trim();
-    els.projectTitle.textContent = state.currentProject.name;
+    setProjectTitle(state.currentProject.name);
     await saveProject();
   });
   els.collapseToolbar.addEventListener('click', () => {

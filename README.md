@@ -36,7 +36,19 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 ### Vista look and icon pack
 
 - The UI now uses a glassy Windows Vista-inspired palette (soft blues, gradients, and Segoe UI typography).
-- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` using these filenames: `app`, `profile`, `new`, `open`, `save`, `settings`, `orientation`, `rename`, `plugins`, `page`, `note`, and `add` (e.g., `new.ico` or `new.svg`).
+- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` (or via data URIs in `public/icons/overrides.css`). Supported filenames:
+  - `app` (brand glyph)
+  - `profile`
+  - `new`
+  - `open`
+  - `save`
+  - `settings`
+  - `orientation` (layout toggle)
+  - `rename`
+  - `plugins` (toolbar toggle)
+  - `page` (page list and script header)
+  - `note` (object builder/director notes)
+  - `add` (toolkit save/add)
 - If you cannot add binaries, paste data URIs into `public/icons/overrides.css` to point the CSS variables at your icon sources without checking assets in.
 
 ## How to test it now

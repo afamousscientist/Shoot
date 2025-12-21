@@ -44,7 +44,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 18px;
+  gap: 16px;
   background: var(--glass);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -57,20 +58,35 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
+.brand-wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .brand-text {
-  font-size: 1.15rem;
+  font-size: 1.45rem;
   color: #f0f7ff;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5),
     0 0 10px rgba(125, 184, 246, 0.75),
     0 0 18px rgba(86, 149, 230, 0.55);
   letter-spacing: 0.05em;
+}
+
+.brand-subtext {
+  font-size: 0.75rem;
+  color: rgba(240, 247, 255, 0.9);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .brand .glyph {
@@ -99,10 +115,37 @@ body {
   font-weight: 600;
 }
 
+.header-project {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: #e6f0ff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04));
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px rgba(0, 32, 64, 0.25);
+  min-width: 240px;
+}
+
+.header-project .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(230, 240, 255, 0.8);
+}
+
+.header-project-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f9fbff;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 8px rgba(127, 181, 245, 0.55);
+}
+
 main {
-  padding: 20px;
+  padding: 14px 18px 18px;
   display: grid;
-  gap: 20px;
+  gap: 16px;
 }
 
 .panel {
