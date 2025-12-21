@@ -17,13 +17,16 @@
         </div>
       </div>
       <div class="header-project" id="headerProject">
-        <span class="label">Project</span>
-        <span class="header-project-title" id="headerProjectTitle">No project loaded</span>
-      </div>
-      <div class="header-actions">
-        <button id="renameProject" class="icon-button icon-only with-icon" data-icon="rename" title="Rename project" aria-label="Rename project"></button>
-        <button id="orientationToggle" class="icon-button icon-only with-icon" data-icon="orientation" title="Switch layout" aria-label="Switch layout"></button>
-        <button id="saveProject" class="icon-button icon-only with-icon" data-icon="save" title="Save project" aria-label="Save project"></button>
+        <div class="header-project-labels">
+          <span class="label">Project</span>
+          <span class="header-project-title" id="headerProjectTitle">No project loaded</span>
+        </div>
+        <div class="header-actions inline">
+          <button id="openDrafts" class="icon-button icon-only with-icon" data-icon="pdf" title="PDF drafts" aria-label="Open PDF drafts"></button>
+          <button id="renameProject" class="icon-button icon-only with-icon" data-icon="rename" title="Rename project" aria-label="Rename project"></button>
+          <button id="orientationToggle" class="icon-button icon-only with-icon" data-icon="orientation" title="Switch layout" aria-label="Switch layout"></button>
+          <button id="saveProject" class="icon-button icon-only with-icon" data-icon="save" title="Save project" aria-label="Save project"></button>
+        </div>
       </div>
       <div class="profile" id="profileBar">
         <div class="profile-name" id="profileName">Guest</div>
@@ -157,6 +160,31 @@
     </section>
   </main>
 
+  <div id="draftModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="draftModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <div id="draftModalTitle" class="with-icon" data-icon="pdf">PDF drafts</div>
+          <div class="muted small">Courier New preview • lines with CONT. are removed</div>
+        </div>
+        <button id="closeDrafts" class="ghost">Close</button>
+      </div>
+      <div class="draft-layout">
+        <div class="draft-sidebar">
+          <button id="refreshDraftPreview" class="with-icon" data-icon="pdf">Load current script</button>
+          <label>Version title
+            <input id="draftName" type="text" placeholder="Version 1" />
+          </label>
+          <button id="saveDraftVersion" class="icon-button with-icon" data-icon="save">Save version</button>
+          <div class="muted small">Saved versions</div>
+          <div id="draftVersionList" class="draft-version-list"></div>
+        </div>
+        <div class="draft-preview-shell">
+          <div class="draft-preview" id="draftPreview" aria-label="PDF draft preview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

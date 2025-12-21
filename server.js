@@ -151,6 +151,7 @@ const server = http.createServer(async (req, res) => {
           const project = {
             id: `proj-${Date.now()}`,
             name,
+            draftVersions: [],
             noteLibrary: [],
             pages: [
               {

@@ -46,12 +46,15 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
   - `settings`
   - `orientation` (layout toggle)
   - `rename`
+  - `pdf` (draft preview/export)
   - `plugins` (toolbar toggle)
   - `page` (page list and script header)
   - `note` (object builder + director notes)
   - `insert` (inline page add next to row numbers)
   - `add` (toolkit save/add)
 - If you cannot add binaries, paste data URIs into `public/icons/overrides.css` to point the CSS variables at your icon sources without checking assets in.
+
+Use the PDF drafts button in the top header to preview the assembled script in Courier New (lines containing `CONT.` are removed for cleaner page breaks) and save named versions for later comparison.
 
 ## How to test it now
 

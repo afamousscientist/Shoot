@@ -31,6 +31,14 @@ const els = {
   addPage: document.getElementById('addPage'),
   pageTable: document.getElementById('pageTable').querySelector('tbody'),
   saveProject: document.getElementById('saveProject'),
+  openDrafts: document.getElementById('openDrafts'),
+  draftModal: document.getElementById('draftModal'),
+  closeDrafts: document.getElementById('closeDrafts'),
+  draftPreview: document.getElementById('draftPreview'),
+  draftVersionList: document.getElementById('draftVersionList'),
+  draftName: document.getElementById('draftName'),
+  saveDraftVersion: document.getElementById('saveDraftVersion'),
+  refreshDraftPreview: document.getElementById('refreshDraftPreview'),
   noteTitle: document.getElementById('noteTitle'),
   noteColor: document.getElementById('noteColor'),
   noteBody: document.getElementById('noteBody'),
@@ -74,6 +82,7 @@ function normalizePageShape(page) {
 function normalizeProjectShape(project) {
   return {
     ...project,
+    draftVersions: Array.isArray(project.draftVersions) ? project.draftVersions : [],
     noteLibrary: Array.isArray(project.noteLibrary) ? project.noteLibrary : [],
     pages: project.pages.map(normalizePageShape)
   };
@@ -386,6 +395,98 @@ function captureScriptToState() {
   syncLinesToPage(page);
 }
 
+function formatDraftLine(block) {
+  const raw = (block.text || '').trimEnd();
+  if (!raw) return '';
+  const normalized = (block.type === 'scene' || block.type === 'character') ? raw.toUpperCase() : raw;
+  if (/\bCONT\./i.test(normalized)) return '';
+  const indent = {
+    scene: '',
+    action: '    ',
+    character: '               ',
+    dialogue: '          '
+  }[block.type || 'action'] || '';
+  return `${indent}${normalized}`.trimEnd();
+}
+
+function buildDraftFromProject(project) {
+  const lines = [];
+  (project.pages || []).forEach((page, pageIdx) => {
+    (page.blocks || []).forEach(block => {
+      const line = formatDraftLine(block);
+      if (line) lines.push(line);
+    });
+    if (pageIdx < (project.pages.length - 1)) lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function renderDraftPreview(text) {
+  els.draftPreview.textContent = text || 'No draft to display yet.';
+}
+
+function renderDraftVersions() {
+  els.draftVersionList.innerHTML = '';
+  if (!state.currentProject) return;
+  const versions = state.currentProject.draftVersions || [];
+  if (!versions.length) {
+    const empty = document.createElement('div');
+    empty.className = 'muted small';
+    empty.textContent = 'No saved versions yet.';
+    els.draftVersionList.appendChild(empty);
+    return;
+  }
+  versions.forEach(version => {
+    const row = document.createElement('button');
+    row.className = 'draft-version';
+    row.type = 'button';
+    row.innerHTML = `<strong>${version.name}</strong><span class="muted small">${new Date(version.createdAt).toLocaleString()}</span>`;
+    row.addEventListener('click', () => {
+      renderDraftPreview(version.body);
+      els.draftName.value = version.name;
+    });
+    els.draftVersionList.appendChild(row);
+  });
+}
+
+function openDraftModal() {
+  if (!state.currentProject) return;
+  captureScriptToState();
+  renderDraftVersions();
+  renderDraftPreview(buildDraftFromProject(state.currentProject));
+  els.draftModal.classList.remove('hidden');
+}
+
+function closeDraftModal() {
+  els.draftModal.classList.add('hidden');
+}
+
+function refreshDraftPreview() {
+  if (!state.currentProject) return;
+  captureScriptToState();
+  renderDraftPreview(buildDraftFromProject(state.currentProject));
+}
+
+function saveDraftVersion() {
+  if (!state.currentProject) return;
+  captureScriptToState();
+  const body = buildDraftFromProject(state.currentProject);
+  const fallback = `Version ${Math.max(1, (state.currentProject.draftVersions?.length || 0) + 1)}`;
+  const name = (els.draftName.value || '').trim() || fallback;
+  const version = {
+    id: `draft-${Date.now()}`,
+    name,
+    body,
+    createdAt: new Date().toISOString()
+  };
+  state.currentProject.draftVersions = state.currentProject.draftVersions || [];
+  state.currentProject.draftVersions.unshift(version);
+  els.draftName.value = name;
+  renderDraftVersions();
+  renderDraftPreview(body);
+  saveProject();
+}
+
 function highlightChip(type) {
   els.lineTypeButtons.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lineType === type);
@@ -557,6 +658,7 @@ async function openProjectById(id) {
   state.currentProject = normalized;
   state.selectedPageId = normalized.pages[0]?.id || null;
   setProjectTitle(normalized.name);
+  els.draftName.value = '';
   const existing = state.projects.findIndex(p => p.id === normalized.id);
   if (existing !== -1) state.projects[existing] = normalized;
   renderNoteLibrary();
@@ -723,6 +825,10 @@ function registerEvents() {
   els.addPage.addEventListener('click', addPage);
   els.orientationToggle.addEventListener('click', toggleOrientation);
   els.saveProject.addEventListener('click', saveProject);
+  els.openDrafts.addEventListener('click', openDraftModal);
+  els.closeDrafts.addEventListener('click', closeDraftModal);
+  els.refreshDraftPreview.addEventListener('click', refreshDraftPreview);
+  els.saveDraftVersion.addEventListener('click', saveDraftVersion);
   [els.noteTitle, els.noteColor, els.noteBody].forEach(input => {
     input.addEventListener('input', renderNotePreview);
   });
@@ -831,6 +937,9 @@ function registerEvents() {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       saveProject();
+    }
+    if (e.key === 'Escape' && !els.draftModal.classList.contains('hidden')) {
+      closeDraftModal();
     }
   });
 

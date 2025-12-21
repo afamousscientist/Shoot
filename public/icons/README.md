@@ -10,6 +10,7 @@ This folder is intentionally empty so no binary assets are committed. Add your o
 - `settings`
 - `orientation` (layout toggle)
 - `rename`
+- `pdf` (draft preview/export)
 - `plugins` (toolbar toggle)
 - `page` (page list + headers)
 - `note` (builder + director notes)
