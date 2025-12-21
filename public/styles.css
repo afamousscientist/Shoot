@@ -23,6 +23,7 @@
   --icon-plugins-src: url('icons/plugins.ico'), url('icons/plugins.svg'), var(--icon-fallback);
   --icon-page-src: url('icons/page.ico'), url('icons/page.svg'), var(--icon-fallback);
   --icon-note-src: url('icons/note.ico'), url('icons/note.svg'), var(--icon-fallback);
+  --icon-insert-src: url('icons/insert.ico'), url('icons/insert.svg'), var(--icon-fallback);
   --icon-add-src: url('icons/add.ico'), url('icons/add.svg'), var(--icon-fallback);
   --font: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
   --shadow-strong: 0 18px 50px rgba(0, 0, 0, 0.35);
@@ -359,7 +360,7 @@ button.primary {
   cursor: grab;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(0, 30, 70, 0.45));
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
+  border-radius: 999px;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.32);
   transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
   overflow: hidden;
@@ -391,14 +392,39 @@ button.primary {
 }
 
   .page-table tbody tr td:first-child {
-    border-top-left-radius: 16px;
-    border-bottom-left-radius: 16px;
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
   }
 
   .page-table tbody tr td:last-child {
-    border-top-right-radius: 16px;
-    border-bottom-right-radius: 16px;
+    border-top-right-radius: 999px;
+    border-bottom-right-radius: 999px;
   }
+
+.index-col {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.page-number {
+  min-width: 28px;
+  text-align: center;
+}
+
+.icon-inline {
+  padding: 6px;
+  border-radius: 999px;
+  min-width: 34px;
+  height: 34px;
+}
+
+.icon-inline[data-icon]::before {
+  width: 20px;
+  height: 20px;
+}
 
 .editable-cell {
   position: relative;
@@ -520,6 +546,7 @@ button[data-icon]::before,
 [data-icon="plugins"]::before { background-image: var(--icon-plugins-src); }
 [data-icon="page"]::before { background-image: var(--icon-page-src); }
 [data-icon="note"]::before { background-image: var(--icon-note-src); }
+[data-icon="insert"]::before { background-image: var(--icon-insert-src); }
 [data-icon="add"]::before { background-image: var(--icon-add-src); }
 [data-icon="app"]::before { background-image: var(--icon-app-src); }
 

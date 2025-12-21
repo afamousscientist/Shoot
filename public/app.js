@@ -153,12 +153,39 @@ function renderPages() {
     const row = document.createElement('tr');
     row.dataset.pageId = page.id;
     row.draggable = true;
-    row.innerHTML = `
-      <td class="index-col">${index + 1}</td>
-      <td class="editable-cell" data-field="title">${page.title}</td>
-      <td class="editable-cell" data-field="type">${page.type || 'Shot'}</td>
-      <td class="editable-cell" data-field="synopsis">${page.synopsis || ''}</td>
-    `;
+    const indexCell = document.createElement('td');
+    indexCell.className = 'index-col';
+    const indexLabel = document.createElement('span');
+    indexLabel.className = 'page-number';
+    indexLabel.textContent = index + 1;
+    const insertButton = document.createElement('button');
+    insertButton.className = 'icon-button icon-only icon-inline with-icon';
+    insertButton.dataset.icon = 'insert';
+    insertButton.type = 'button';
+    insertButton.title = 'Add page below';
+    insertButton.setAttribute('aria-label', 'Add page below');
+    insertButton.addEventListener('click', e => {
+      e.stopPropagation();
+      addPage(page.id);
+    });
+    indexCell.append(indexLabel, insertButton);
+
+    const titleCell = document.createElement('td');
+    titleCell.className = 'editable-cell';
+    titleCell.dataset.field = 'title';
+    titleCell.textContent = page.title;
+
+    const typeCell = document.createElement('td');
+    typeCell.className = 'editable-cell';
+    typeCell.dataset.field = 'type';
+    typeCell.textContent = page.type || 'Shot';
+
+    const synopsisCell = document.createElement('td');
+    synopsisCell.className = 'editable-cell';
+    synopsisCell.dataset.field = 'synopsis';
+    synopsisCell.textContent = page.synopsis || '';
+
+    row.append(indexCell, titleCell, typeCell, synopsisCell);
     row.addEventListener('dblclick', () => selectPage(page.id));
     row.addEventListener('dragstart', e => {
       draggingPageId = page.id;
@@ -540,11 +567,12 @@ async function openProjectById(id) {
   renderRecent();
 }
 
-function addPage() {
+function addPage(afterPageId = null) {
   if (!state.currentProject) return;
+  const pages = state.currentProject.pages;
   const newPage = {
     id: `page-${Date.now()}`,
-    title: `Page ${state.currentProject.pages.length + 1}`,
+    title: `Page ${pages.length + 1}`,
     type: 'Shot',
     synopsis: '',
     directorNotes: [],
@@ -553,7 +581,12 @@ function addPage() {
       { id: `blk-${Date.now()}-action`, type: 'action', text: '' }
     ]
   };
-  state.currentProject.pages.push(newPage);
+  let insertIdx = pages.length;
+  if (afterPageId) {
+    const idx = pages.findIndex(p => p.id === afterPageId);
+    if (idx !== -1) insertIdx = idx + 1;
+  }
+  pages.splice(insertIdx, 0, newPage);
   renderPages();
   selectPage(newPage.id);
 }
