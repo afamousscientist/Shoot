@@ -7,6 +7,8 @@ const state = {
   noteEdit: null
 };
 
+let draggingPageId = null;
+
 const els = {
   profileName: document.getElementById('profileName'),
   profileSave: document.getElementById('profileSave'),
@@ -22,7 +24,6 @@ const els = {
   openProject: document.getElementById('openProject'),
   openSelect: document.getElementById('openProjectSelect'),
   recentList: document.getElementById('recentList'),
-  projectTitle: document.getElementById('projectTitle'),
   headerProjectTitle: document.getElementById('headerProjectTitle'),
   renameProject: document.getElementById('renameProject'),
   layout: document.getElementById('layout'),
@@ -48,17 +49,16 @@ const els = {
 };
 
 function setProjectTitle(name = 'No project loaded') {
-  els.projectTitle.textContent = name;
   els.headerProjectTitle.textContent = name;
 }
 
-setProjectTitle(els.projectTitle.textContent || 'No project loaded');
+setProjectTitle('No project loaded');
 
 function normalizePageShape(page) {
   const normalized = { ...page };
   normalized.type = normalized.type || normalized.block || 'Shot';
   normalized.synopsis = normalized.synopsis ?? normalized.summary ?? '';
-   normalized.directorNotes = Array.isArray(normalized.directorNotes) ? normalized.directorNotes : [];
+  normalized.directorNotes = Array.isArray(normalized.directorNotes) ? normalized.directorNotes : [];
   if (!Array.isArray(normalized.blocks)) {
     const seedText = (normalized.text || '').split('\n').filter(line => line !== '');
     const defaultType = normalized.block || 'action';
@@ -152,6 +152,7 @@ function renderPages() {
   state.currentProject.pages.forEach((page, index) => {
     const row = document.createElement('tr');
     row.dataset.pageId = page.id;
+    row.draggable = true;
     row.innerHTML = `
       <td class="index-col">${index + 1}</td>
       <td class="editable-cell" data-field="title">${page.title}</td>
@@ -159,11 +160,55 @@ function renderPages() {
       <td class="editable-cell" data-field="synopsis">${page.synopsis || ''}</td>
     `;
     row.addEventListener('dblclick', () => selectPage(page.id));
+    row.addEventListener('dragstart', e => {
+      draggingPageId = page.id;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', page.id);
+    });
+    row.addEventListener('dragend', () => {
+      draggingPageId = null;
+      row.classList.remove('dragging');
+      clearDragHighlights();
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggingPageId || draggingPageId === page.id) return;
+      clearDragHighlights();
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', clearDragHighlights);
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!draggingPageId || draggingPageId === page.id) return;
+      const rect = row.getBoundingClientRect();
+      const dropBefore = e.clientY < rect.top + rect.height / 2;
+      reorderPages(draggingPageId, page.id, dropBefore ? 'before' : 'after');
+      draggingPageId = null;
+      clearDragHighlights();
+    });
     if (page.id === state.selectedPageId) {
       row.classList.add('active');
     }
     els.pageTable.appendChild(row);
   });
+}
+
+function clearDragHighlights() {
+  els.pageTable.querySelectorAll('tr').forEach(tr => tr.classList.remove('drag-over'));
+}
+
+function reorderPages(sourceId, targetId, position = 'before') {
+  const pages = state.currentProject?.pages;
+  if (!pages) return;
+  const fromIdx = pages.findIndex(p => p.id === sourceId);
+  if (fromIdx === -1) return;
+  const [moved] = pages.splice(fromIdx, 1);
+  let insertIdx = pages.findIndex(p => p.id === targetId);
+  if (insertIdx === -1) insertIdx = pages.length;
+  if (position === 'after') insertIdx += 1;
+  pages.splice(insertIdx, 0, moved);
+  renderPages();
 }
 
 function startCellEdit(cell) {
@@ -604,6 +649,23 @@ function attachTableEditing() {
     if (!cell) return;
     e.stopPropagation();
     startCellEdit(cell);
+  });
+
+  els.pageTable.addEventListener('dragover', e => {
+    if (!draggingPageId) return;
+    e.preventDefault();
+  });
+
+  els.pageTable.addEventListener('drop', e => {
+    if (!draggingPageId) return;
+    e.preventDefault();
+    const rows = Array.from(els.pageTable.querySelectorAll('tr'));
+    const lastId = rows.at(-1)?.dataset.pageId;
+    if (lastId && draggingPageId !== lastId) {
+      reorderPages(draggingPageId, lastId, 'after');
+    }
+    draggingPageId = null;
+    clearDragHighlights();
   });
 }
 

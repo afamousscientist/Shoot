@@ -24,6 +24,7 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 - Lobby screen showing the three most recently accessed projects and quick new/open actions.
 - Profile bar that remembers your display name, plugin toggles, and recent projects.
 - Simple project table view where each row is a page with inline-editable title, type, and synopsis cells.
+- Drag-and-drop rows to reorder shots in the table while keeping the Vista glass depth on each row.
 - Double-click a page to open it in the sidebar script editor. Start typing to build multiple screenplay blocks (scene headers, action, character, dialogue) with tab-to-character and enter-to-dialogue flows.
 - A dedicated director toolkit: build colored instruction cards, drag them into the per-page director box (stored separately from the script), and review them beneath the editor.
 - Double-click any toolkit or director note to edit its title, color, or text in the builder, then apply changes back to the saved card.
@@ -35,8 +36,8 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 
 ### Vista look and icon pack
 
-- The UI now uses a glassy Windows Vista-inspired palette (soft blues, gradients, and Segoe UI typography).
-- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` (or via data URIs in `public/icons/overrides.css`). Supported filenames:
+- The UI now uses a glassy Windows Vista-inspired palette (soft blues, gradients, and Segoe UI typography), brighter depth on the page table, and larger icon-only controls.
+- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` (or via data URIs in `public/icons/overrides.css`). Current icon hook names the UI looks for:
   - `app` (brand glyph)
   - `profile`
   - `new`
@@ -47,7 +48,7 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
   - `rename`
   - `plugins` (toolbar toggle)
   - `page` (page list and script header)
-  - `note` (object builder/director notes)
+  - `note` (object builder + director notes)
   - `add` (toolkit save/add)
 - If you cannot add binaries, paste data URIs into `public/icons/overrides.css` to point the CSS variables at your icon sources without checking assets in.
 
