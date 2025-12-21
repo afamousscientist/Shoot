@@ -36,8 +36,8 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
 
 ### Vista look and icon pack
 
-- The UI now uses a glassy Windows Vista-inspired palette (soft blues, gradients, and Segoe UI typography), brighter depth on the page table, and larger icon-only controls.
-- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` (or via data URIs in `public/icons/overrides.css`). Current icon hook names the UI looks for:
+- The UI now uses a glassy Windows Vista-inspired palette (soft blues, gradients, and Segoe UI typography), brighter depth on the page table, and larger icon-only controls nested in the top header chrome.
+- Icon files are **not** committed to the repo to keep things binary-safe. Add your own Vista-style icons under `public/icons/` (or via data URIs in `public/icons/overrides.css`). Current icon hook names the UI looks for (icons render without button backgrounds, so transparent assets fit best):
   - `app` (brand glyph)
   - `profile`
   - `new`

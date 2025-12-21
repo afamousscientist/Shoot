@@ -1,6 +1,6 @@
 # Vista icon pack (bring your own)
 
-This folder is intentionally empty so no binary assets are committed. Add your own icons using these filenames so the UI picks them up automatically:
+This folder is intentionally empty so no binary assets are committed. Add your own transparent/edge-softened icons using these filenames so the UI picks them up automatically (buttons no longer paint their own backgrounds):
 
 - `app` (brand glyph)
 - `profile`

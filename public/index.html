@@ -20,6 +20,11 @@
         <span class="label">Project</span>
         <span class="header-project-title" id="headerProjectTitle">No project loaded</span>
       </div>
+      <div class="header-actions">
+        <button id="renameProject" class="icon-button icon-only with-icon" data-icon="rename" title="Rename project" aria-label="Rename project"></button>
+        <button id="orientationToggle" class="icon-button icon-only with-icon" data-icon="orientation" title="Switch layout" aria-label="Switch layout"></button>
+        <button id="saveProject" class="icon-button icon-only with-icon" data-icon="save" title="Save project" aria-label="Save project"></button>
+      </div>
       <div class="profile" id="profileBar">
         <div class="profile-name" id="profileName">Guest</div>
         <button id="profileSave" class="ghost with-icon" data-icon="profile">Remember Profile</button>
@@ -48,14 +53,6 @@
     </section>
 
     <section id="workspace" class="panel hidden">
-      <div class="workspace-header">
-        <div class="workspace-actions">
-          <button id="renameProject" class="icon-button icon-only with-icon" data-icon="rename" title="Rename project" aria-label="Rename project"></button>
-          <button id="orientationToggle" class="icon-button icon-only with-icon" data-icon="orientation" title="Switch layout" aria-label="Switch layout"></button>
-          <button id="saveProject" class="icon-button icon-only with-icon" data-icon="save" title="Save project" aria-label="Save project"></button>
-        </div>
-      </div>
-
       <div id="layout" class="layout horizontal">
         <aside class="rundown" id="rundownPanel">
           <div class="panel-header">
