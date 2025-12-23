@@ -14,6 +14,7 @@ This folder is intentionally empty so no binary assets are committed. Add your o
 - `download` (PDF download)
 - `scroll` (preview scroll view)
 - `spread` (preview side-by-side)
+- `director` (director view toggle)
 - `plugins` (toolbar toggle)
 - `page` (page list + headers)
 - `note` (builder + director notes)

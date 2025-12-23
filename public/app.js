@@ -5,7 +5,8 @@ const state = {
   selectedPageId: null,
   orientation: 'horizontal',
   noteEdit: null,
-  draftViewMode: 'scroll'
+  draftViewMode: 'scroll',
+  draftFormat: 'script'
 };
 
 let draggingPageId = null;
@@ -47,6 +48,8 @@ const els = {
   draftWatermark: document.getElementById('draftWatermark'),
   draftViewScroll: document.getElementById('draftViewScroll'),
   draftViewSpread: document.getElementById('draftViewSpread'),
+  draftFormatScript: document.getElementById('draftFormatScript'),
+  draftFormatDirector: document.getElementById('draftFormatDirector'),
   downloadDraft: document.getElementById('downloadDraft'),
   noteTitle: document.getElementById('noteTitle'),
   noteColor: document.getElementById('noteColor'),
@@ -407,16 +410,13 @@ function captureScriptToState() {
 
 function formatDraftLine(block) {
   const raw = (block.text || '').trimEnd();
-  if (!raw) return '';
+  if (!raw) return null;
   const normalized = (block.type === 'scene' || block.type === 'character') ? raw.toUpperCase() : raw;
-  if (/\bCONT\./i.test(normalized)) return '';
-  const indent = {
-    scene: '',
-    action: '    ',
-    character: '               ',
-    dialogue: '          '
-  }[block.type || 'action'] || '';
-  return `${indent}${normalized}`.trimEnd();
+  if (/\bCONT\./i.test(normalized)) return null;
+  return {
+    text: normalized,
+    type: block.type || 'action'
+  };
 }
 
 function buildDraftLines(project) {
@@ -426,13 +426,27 @@ function buildDraftLines(project) {
       const line = formatDraftLine(block);
       if (line) lines.push(line);
     });
-    if (pageIdx < (project.pages.length - 1)) lines.push('');
+    if (pageIdx < (project.pages.length - 1)) lines.push({ text: '', type: 'spacer' });
   });
   return lines;
 }
 
+function buildDirectorEntries(project) {
+  return (project.pages || []).map((page, idx) => ({
+    number: idx + 1,
+    title: page.title || `Page ${idx + 1}`,
+    type: page.type || 'Shot',
+    synopsis: page.synopsis || '',
+    directorNotes: Array.isArray(page.directorNotes) ? page.directorNotes : [],
+    lines: (page.blocks || []).map(formatDraftLine).filter(Boolean)
+  }));
+}
+
 function buildDraftFromProject(project) {
-  return buildDraftLines(project).join('\n');
+  return {
+    lines: buildDraftLines(project),
+    directorEntries: buildDirectorEntries(project)
+  };
 }
 
 function getDraftSettings(overrides = {}) {
@@ -444,7 +458,8 @@ function getDraftSettings(overrides = {}) {
     titlePageSubtitle: 'by goblinStudio',
     titlePageAuthor: '',
     watermark: '',
-    viewMode: state.draftViewMode || 'scroll'
+    viewMode: state.draftViewMode || 'scroll',
+    format: state.draftFormat || 'script'
   };
   return { ...defaults, ...stored, ...overrides };
 }
@@ -457,6 +472,7 @@ function hydrateDraftSettingsForm() {
   els.draftTitlePageAuthor.value = settings.titlePageAuthor || '';
   els.draftWatermark.value = settings.watermark || '';
   toggleDraftView(settings.viewMode, false);
+  toggleDraftFormat(settings.format || 'script', false);
 }
 
 function persistDraftSettings() {
@@ -467,8 +483,15 @@ function persistDraftSettings() {
     titlePageSubtitle: els.draftTitlePageSubtitle.value,
     titlePageAuthor: els.draftTitlePageAuthor.value,
     watermark: els.draftWatermark.value,
-    viewMode: state.draftViewMode
+    viewMode: state.draftViewMode,
+    format: state.draftFormat
   };
+}
+
+function normalizeDraftLine(entry) {
+  if (!entry) return { text: '', type: 'action' };
+  if (typeof entry === 'string') return { text: entry, type: 'action' };
+  return { text: entry.text || '', type: entry.type || 'action' };
 }
 
 function splitIntoPages(lines, settings) {
@@ -476,22 +499,32 @@ function splitIntoPages(lines, settings) {
   const pages = [];
   let buffer = [];
   lines.forEach(line => {
+    const normalized = normalizeDraftLine(line);
     if (buffer.length >= MAX_LINES) {
       pages.push({ lines: buffer });
       buffer = [];
     }
-    buffer.push(line || ' ');
+    buffer.push(normalized);
   });
   if (buffer.length) pages.push({ lines: buffer });
   return pages;
 }
 
 function buildDraftPreviewData(fromText) {
-  const settings = getDraftSettings();
+  const settings = getDraftSettings(typeof fromText === 'object' && !Array.isArray(fromText) ? fromText.settings || {} : {});
   const projectTitle = settings.titlePageTitle || state.currentProject?.name || 'Shoot!';
-  const baseLines = Array.isArray(fromText) ? fromText : (fromText || '').split('\n');
-  const lines = baseLines.length ? baseLines : [''];
+  const baseLines = Array.isArray(fromText?.lines)
+    ? fromText.lines
+    : Array.isArray(fromText)
+      ? fromText
+      : typeof fromText === 'string'
+        ? (fromText || '').split('\n')
+        : [];
+  const lines = (baseLines.length ? baseLines : ['']).map(normalizeDraftLine);
   const pages = splitIntoPages(lines, settings);
+  const directorEntries = Array.isArray(fromText?.directorEntries) && fromText.directorEntries.length
+    ? fromText.directorEntries
+    : buildDirectorEntries(state.currentProject || { pages: [] });
   if (settings.includeTitlePage) {
     pages.unshift({
       isTitle: true,
@@ -500,13 +533,17 @@ function buildDraftPreviewData(fromText) {
       author: settings.titlePageAuthor
     });
   }
-  return { pages, settings, projectTitle };
+  return { pages, settings, projectTitle, directorEntries };
 }
 
 function renderDraftPreview(preview) {
   els.draftPreview.innerHTML = '';
   if (!preview || !preview.pages.length) {
     els.draftPreview.textContent = 'No draft to display yet.';
+    return;
+  }
+  if (preview.settings.format === 'director') {
+    renderDirectorPreview(preview);
     return;
   }
   const wrapper = document.createElement('div');
@@ -544,9 +581,10 @@ function renderDraftPreview(preview) {
       body.append(t, sub, by);
     } else {
       page.lines.forEach(text => {
+        const lineObj = normalizeDraftLine(text);
         const line = document.createElement('div');
-        line.className = 'draft-line';
-        line.textContent = text || ' ';
+        line.className = `draft-line draft-${lineObj.type || 'action'}`;
+        line.textContent = lineObj.text || ' ';
         body.appendChild(line);
       });
     }
@@ -574,6 +612,81 @@ function renderDraftPreview(preview) {
   els.draftPreview.appendChild(wrapper);
 }
 
+function renderDirectorPreview(preview) {
+  const wrapper = document.createElement('div');
+  wrapper.className = `draft-pages ${preview.settings.viewMode === 'spread' ? 'spread' : 'scroll'} director-mode`;
+  const entries = preview.directorEntries || [];
+  entries.forEach((entry, idx) => {
+    const pageEl = document.createElement('div');
+    pageEl.className = 'draft-page director-page';
+
+    const header = document.createElement('div');
+    header.className = 'draft-page-header';
+    header.innerHTML = `<span>${preview.projectTitle}</span><span>Page ${idx + 1}</span>`;
+    pageEl.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'draft-page-body director-body';
+
+    const slug = document.createElement('div');
+    slug.className = 'director-slug';
+    const slugText = `(${entry.number}) : ${entry.title || ''} // ${entry.type || ''} - ${entry.synopsis || ''}`;
+    slug.textContent = slugText.trim();
+    body.appendChild(slug);
+
+    const notesWrap = document.createElement('div');
+    notesWrap.className = 'director-notes';
+    (entry.directorNotes || []).forEach(note => {
+      const noteEl = document.createElement('div');
+      noteEl.className = 'director-note-card';
+      noteEl.style.setProperty('--note-color', note.color || '#2b8cff');
+      const title = document.createElement('div');
+      title.className = 'director-note-title';
+      title.textContent = note.title || 'Note';
+      const text = document.createElement('div');
+      text.className = 'director-note-text';
+      text.textContent = note.text || '';
+      noteEl.appendChild(title);
+      noteEl.appendChild(text);
+      notesWrap.appendChild(noteEl);
+    });
+    if (!notesWrap.children.length) {
+      const empty = document.createElement('div');
+      empty.className = 'muted small';
+      empty.textContent = 'No director notes for this row yet.';
+      notesWrap.appendChild(empty);
+    }
+    body.appendChild(notesWrap);
+
+    const scriptWrap = document.createElement('div');
+    scriptWrap.className = 'director-script';
+    (entry.lines || []).forEach(lineText => {
+      const entryLine = normalizeDraftLine(lineText);
+      const line = document.createElement('div');
+      line.className = `draft-line draft-${entryLine.type || 'action'}`;
+      line.textContent = entryLine.text || ' ';
+      scriptWrap.appendChild(line);
+    });
+    body.appendChild(scriptWrap);
+
+    const footer = document.createElement('div');
+    footer.className = 'draft-page-footer';
+    footer.innerHTML = `<span>${preview.projectTitle}</span><span>${idx + 1}</span>`;
+    pageEl.appendChild(body);
+    pageEl.appendChild(footer);
+
+    if (preview.settings.watermark) {
+      const mark = document.createElement('div');
+      mark.className = 'draft-watermark';
+      mark.textContent = preview.settings.watermark;
+      pageEl.appendChild(mark);
+    }
+
+    wrapper.appendChild(pageEl);
+  });
+  els.draftPreview.appendChild(wrapper);
+}
+
 function renderCurrentDraftPreview() {
   if (!state.currentProject) return;
   renderDraftPreview(buildDraftPreviewData(buildDraftFromProject(state.currentProject)));
@@ -591,18 +704,46 @@ function toggleDraftView(mode, rerender = true) {
   if (rerender) renderCurrentDraftPreview();
 }
 
+function toggleDraftFormat(format, rerender = true) {
+  state.draftFormat = format;
+  if (format === 'director') {
+    els.draftFormatDirector.classList.add('active');
+    els.draftFormatScript.classList.remove('active');
+  } else {
+    els.draftFormatScript.classList.add('active');
+    els.draftFormatDirector.classList.remove('active');
+  }
+  if (rerender) renderCurrentDraftPreview();
+}
+
 function buildPrintableHtml(preview) {
+  const printableLine = line => {
+    const entry = normalizeDraftLine(line);
+    const safe = (entry.text || ' ').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const cls = `draft-line draft-${entry.type || 'action'}`;
+    return `<div class="${cls}">${safe || '&nbsp;'}</div>`;
+  };
+
+  const directorPages = (preview.directorEntries || []).map((entry, idx) => {
+    const header = `<div class="draft-page-header"><span>${preview.projectTitle}</span><span>Page ${idx + 1}</span></div>`;
+    const footer = `<div class="draft-page-footer"><span>${preview.projectTitle}</span><span>${idx + 1}</span></div>`;
+    const slug = `<div class="director-slug">(${entry.number}) : ${entry.title || ''} // ${entry.type || ''} - ${entry.synopsis || ''}</div>`;
+    const notes = (entry.directorNotes || []).length
+      ? `<div class="director-notes">${entry.directorNotes.map(note => `<div class="director-note-card" style="--note-color:${note.color || '#2b8cff'}"><div class="director-note-title">${(note.title || 'Note').replace(/&/g, '&amp;')}</div><div class="director-note-text">${(note.text || '').replace(/&/g, '&amp;')}</div></div>`).join('')}</div>`
+      : '<div class="director-notes"><div class="muted small">No director notes for this row yet.</div></div>';
+    const script = `<div class="director-script">${(entry.lines || []).map(printableLine).join('')}</div>`;
+    const watermark = preview.settings.watermark ? `<div class="draft-watermark">${preview.settings.watermark}</div>` : '';
+    return `<div class="draft-page director-page">${header}<div class="draft-page-body director-body">${slug}${notes}${script}</div>${footer}${watermark}</div>`;
+  }).join('');
+
   const pagesHtml = preview.pages.map((page, idx) => {
     const numberIndex = idx + 1 - (preview.settings.includeTitlePage ? 1 : 0);
     const header = page.isTitle ? '' : `<div class="draft-page-header"><span>${preview.projectTitle}</span><span>Page ${Math.max(1, numberIndex)}</span></div>`;
-    const footer = page.isTitle ? '' : `<div class="draft-page-footer">${preview.projectTitle}<span>${Math.max(1, numberIndex)}</span></div>`;
+    const footer = page.isTitle ? '' : `<div class="draft-page-footer"><span>${preview.projectTitle}</span><span>${Math.max(1, numberIndex)}</span></div>`;
     const watermark = preview.settings.watermark ? `<div class="draft-watermark">${preview.settings.watermark}</div>` : '';
     const body = page.isTitle
       ? `<div class="draft-page-body title-body"><div class="title-line main">${page.title || ''}</div><div class="title-line sub">${page.subtitle || ''}</div><div class="title-line by">${page.author ? `by ${page.author}` : ''}</div></div>`
-      : `<div class="draft-page-body">${page.lines.map(t => {
-        const safe = (t || ' ').replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        return `<div class="draft-line">${safe}</div>`;
-      }).join('')}</div>`;
+      : `<div class="draft-page-body">${(page.lines || []).map(printableLine).join('')}</div>`;
     return `<div class="draft-page ${page.isTitle ? 'title-page' : ''}">${header}${body}${footer}${watermark}</div>`;
   }).join('');
 
@@ -613,15 +754,27 @@ function buildPrintableHtml(preview) {
       .draft-page{position:relative;background:#fff;border:1px solid #b6c8e6;border-radius:12px;box-shadow:0 10px 28px rgba(0,32,92,.18);padding:72px 60px 60px;min-height:880px;overflow:hidden;}
       .draft-page-header{position:absolute;top:18px;left:28px;right:28px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:0.4px;color:#123;}
       .draft-page-footer{position:absolute;bottom:18px;left:28px;right:28px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:0.4px;color:#123;}
-      .draft-page-body{margin-top:12px;line-height:1.4;}
-      .draft-line{white-space:pre-wrap;margin:0.1em 0;}
+      .draft-page-body{margin-top:12px;line-height:1.55;font-family:'Courier New',monospace;}
+      .draft-line{white-space:pre-wrap;margin:0.35em 0;}
+      .draft-line.draft-scene{letter-spacing:0.5px;}
+      .draft-line.draft-action{max-width:90%;}
+      .draft-line.draft-character{max-width:55%;margin-left:auto;margin-right:auto;text-transform:uppercase;text-align:center;}
+      .draft-line.draft-dialogue{max-width:65%;margin-left:auto;margin-right:auto;text-align:center;}
+      .draft-line.draft-spacer{height:0.6em;}
       .draft-watermark{position:absolute;inset:20% 5%;display:flex;align-items:center;justify-content:center;font-size:48px;letter-spacing:4px;color:rgba(0,0,0,0.08);transform:rotate(-20deg);}
       .title-body{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:120px;}
       .title-line.main{font-size:28px;letter-spacing:1px;font-weight:700;}
       .title-line.sub{font-size:16px;}
       .title-line.by{font-size:16px;font-style:italic;}
+      .director-page .director-body{display:flex;flex-direction:column;gap:12px;}
+      .director-slug{font-weight:700;letter-spacing:0.6px;background:linear-gradient(90deg,rgba(0,62,128,0.08),rgba(255,255,255,0));padding:8px 12px;border-radius:8px;}
+      .director-notes{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));font-family:'Georgia',serif;}
+      .director-note-card{border:1px solid rgba(0,0,0,0.1);border-top:4px solid var(--note-color,#2b8cff);border-radius:10px;background:rgba(0,0,0,0.02);padding:8px 10px;box-shadow:0 6px 14px rgba(0,32,92,0.12);}
+      .director-note-title{font-weight:700;margin-bottom:4px;}
+      .director-note-text{white-space:pre-wrap;}
+      .director-script{padding:10px 6px;border-radius:10px;background:linear-gradient(180deg,rgba(0,0,0,0.02),rgba(0,0,0,0.04));}
       @page { margin: 20mm 18mm; }
-    </style></head><body><div class="draft-pages">${pagesHtml}</div></body></html>`;
+    </style></head><body><div class="draft-pages">${preview.settings.format === 'director' ? directorPages : pagesHtml}</div></body></html>`;
 }
 
 function downloadDraftPdf() {
@@ -1051,6 +1204,8 @@ function registerEvents() {
   });
   els.draftViewScroll.addEventListener('click', () => toggleDraftView('scroll'));
   els.draftViewSpread.addEventListener('click', () => toggleDraftView('spread'));
+  els.draftFormatScript.addEventListener('click', () => toggleDraftFormat('script'));
+  els.draftFormatDirector.addEventListener('click', () => toggleDraftFormat('director'));
   els.downloadDraft.addEventListener('click', downloadDraftPdf);
   [els.noteTitle, els.noteColor, els.noteBody].forEach(input => {
     input.addEventListener('input', renderNotePreview);

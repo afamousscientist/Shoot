@@ -902,6 +902,11 @@ button[data-icon]::before,
   gap: 8px;
 }
 
+.draft-format-toggle {
+  display: flex;
+  gap: 8px;
+}
+
 .draft-view-toggle .icon-button.active {
   background: linear-gradient(180deg, #dff0ff, #c2dbff);
   border-color: rgba(0, 70, 160, 0.35);
@@ -961,12 +966,86 @@ button[data-icon]::before,
 .draft-page-body {
   font-family: "Courier New", Courier, monospace;
   color: #111;
-  line-height: 1.4;
+  line-height: 1.55;
 }
 
 .draft-line {
-  margin: 0.1em 0;
+  margin: 0.35em 0;
   white-space: pre-wrap;
+}
+
+.draft-line.draft-scene {
+  letter-spacing: 0.5px;
+}
+
+.draft-line.draft-action {
+  max-width: 90%;
+}
+
+.draft-line.draft-character {
+  max-width: 55%;
+  margin-left: auto;
+  margin-right: auto;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.draft-line.draft-dialogue {
+  max-width: 65%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.draft-line.draft-spacer {
+  height: 0.6em;
+}
+
+.director-page .director-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.director-slug {
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  background: linear-gradient(90deg, rgba(0, 62, 128, 0.08), rgba(255, 255, 255, 0));
+  padding: 8px 12px;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.director-notes {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  font-family: "Georgia", serif;
+}
+
+.director-note-card {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-top: 4px solid var(--note-color, #2b8cff);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.02);
+  padding: 8px 10px;
+  box-shadow: 0 6px 14px rgba(0, 32, 92, 0.12);
+}
+
+.director-note-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.director-note-text {
+  white-space: pre-wrap;
+}
+
+.director-script {
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.04));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .draft-page.title-page .draft-page-body {
