@@ -47,6 +47,9 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
   - `orientation` (layout toggle)
   - `rename`
   - `pdf` (draft preview/export)
+  - `download` (draft download)
+  - `scroll` (draft scroll view)
+  - `spread` (draft side-by-side view)
   - `plugins` (toolbar toggle)
   - `page` (page list and script header)
   - `note` (object builder + director notes)
@@ -54,7 +57,7 @@ The server binds to `0.0.0.0:3000` so other devices on your local network can re
   - `add` (toolkit save/add)
 - If you cannot add binaries, paste data URIs into `public/icons/overrides.css` to point the CSS variables at your icon sources without checking assets in.
 
-Use the PDF drafts button in the top header to preview the assembled script in Courier New (lines containing `CONT.` are removed for cleaner page breaks) and save named versions for later comparison.
+Use the PDF drafts button in the top header to preview the assembled script in Courier New (lines containing `CONT.` are removed for cleaner page breaks), switch between continuous scroll and side-by-side page views, add optional title pages/watermarks, and save named versions for later comparison. The preview adds screenplay-friendly margins, page numbers, and your project title in the header/footer, and the **Download PDF** control opens a print-ready view you can save as PDF.
 
 ## How to test it now
 

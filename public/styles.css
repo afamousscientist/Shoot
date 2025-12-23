@@ -19,6 +19,10 @@
   --icon-settings-src: url('icons/settings.ico'), url('icons/settings.svg'), var(--icon-fallback);
   --icon-orientation-src: url('icons/orientation.ico'), url('icons/orientation.svg'), var(--icon-fallback);
   --icon-rename-src: url('icons/rename.ico'), url('icons/rename.svg'), var(--icon-fallback);
+  --icon-pdf-src: url('icons/pdf.ico'), url('icons/pdf.svg'), var(--icon-fallback);
+  --icon-download-src: url('icons/download.ico'), url('icons/download.svg'), var(--icon-fallback);
+  --icon-scroll-src: url('icons/scroll.ico'), url('icons/scroll.svg'), var(--icon-fallback);
+  --icon-spread-src: url('icons/spread.ico'), url('icons/spread.svg'), var(--icon-fallback);
   --icon-profile-src: url('icons/profile.ico'), url('icons/profile.svg'), var(--icon-fallback);
   --icon-plugins-src: url('icons/plugins.ico'), url('icons/plugins.svg'), var(--icon-fallback);
   --icon-page-src: url('icons/page.ico'), url('icons/page.svg'), var(--icon-fallback);
@@ -559,6 +563,10 @@ button[data-icon]::before,
 [data-icon="settings"]::before { background-image: var(--icon-settings-src); }
 [data-icon="orientation"]::before { background-image: var(--icon-orientation-src); }
 [data-icon="rename"]::before { background-image: var(--icon-rename-src); }
+[data-icon="pdf"]::before { background-image: var(--icon-pdf-src); }
+[data-icon="download"]::before { background-image: var(--icon-download-src); }
+[data-icon="scroll"]::before { background-image: var(--icon-scroll-src); }
+[data-icon="spread"]::before { background-image: var(--icon-spread-src); }
 [data-icon="profile"]::before { background-image: var(--icon-profile-src); }
 [data-icon="plugins"]::before { background-image: var(--icon-plugins-src); }
 [data-icon="page"]::before { background-image: var(--icon-page-src); }
@@ -828,7 +836,7 @@ button[data-icon]::before,
   border-radius: 16px;
   border: 1px solid var(--border);
   box-shadow: 0 22px 38px rgba(0, 36, 86, 0.35);
-  max-width: 1100px;
+  max-width: 1240px;
   width: 100%;
   padding: 16px;
 }
@@ -845,7 +853,7 @@ button[data-icon]::before,
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 16px;
-  min-height: 520px;
+  min-height: 560px;
 }
 
 .draft-sidebar {
@@ -867,15 +875,119 @@ button[data-icon]::before,
   overflow: auto;
 }
 
+.draft-preview-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.draft-view-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.draft-view-toggle .icon-button.active {
+  background: linear-gradient(180deg, #dff0ff, #c2dbff);
+  border-color: rgba(0, 70, 160, 0.35);
+  color: #0c2a62;
+}
+
 .draft-preview {
-  white-space: pre-wrap;
+  min-height: 480px;
+}
+
+.draft-pages {
+  display: grid;
+  gap: 12px;
+}
+
+.draft-pages.scroll {
+  grid-template-columns: 1fr;
+}
+
+.draft-pages.spread {
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+}
+
+.draft-page {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 50, 120, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 28px rgba(0, 32, 92, 0.2);
+  padding: 78px 64px 64px;
+  min-height: 880px;
+  overflow: hidden;
+}
+
+.draft-page-header,
+.draft-page-footer {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  color: #14315e;
+}
+
+.draft-page-header {
+  top: 18px;
+}
+
+.draft-page-footer {
+  bottom: 18px;
+}
+
+.draft-page-body {
   font-family: "Courier New", Courier, monospace;
   color: #111;
-  background: #fff;
-  border-radius: 10px;
-  padding: 18px;
-  min-height: 480px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  line-height: 1.4;
+}
+
+.draft-line {
+  margin: 0.1em 0;
+  white-space: pre-wrap;
+}
+
+.draft-page.title-page .draft-page-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 120px;
+  text-align: center;
+}
+
+.draft-page .title-line.main {
+  font-size: 28px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.draft-page .title-line.sub {
+  font-size: 16px;
+}
+
+.draft-page .title-line.by {
+  font-size: 16px;
+  font-style: italic;
+}
+
+.draft-watermark {
+  position: absolute;
+  inset: 20% 5%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  letter-spacing: 4px;
+  color: rgba(0, 0, 0, 0.08);
+  transform: rotate(-20deg);
+  pointer-events: none;
 }
 
 .draft-version-list {

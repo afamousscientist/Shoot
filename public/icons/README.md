@@ -11,6 +11,9 @@ This folder is intentionally empty so no binary assets are committed. Add your o
 - `orientation` (layout toggle)
 - `rename`
 - `pdf` (draft preview/export)
+- `download` (PDF download)
+- `scroll` (preview scroll view)
+- `spread` (preview side-by-side)
 - `plugins` (toolbar toggle)
 - `page` (page list + headers)
 - `note` (builder + director notes)

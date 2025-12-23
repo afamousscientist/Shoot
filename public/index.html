@@ -178,8 +178,31 @@
           <button id="saveDraftVersion" class="icon-button with-icon" data-icon="save">Save version</button>
           <div class="muted small">Saved versions</div>
           <div id="draftVersionList" class="draft-version-list"></div>
+          <div class="muted small">Title page & watermark</div>
+          <label class="checkbox-line"><input type="checkbox" id="includeTitlePage" /> Include a title page</label>
+          <label>Title page title
+            <input id="draftTitlePageTitle" type="text" placeholder="Shoot!" />
+          </label>
+          <label>Subtitle / contact
+            <input id="draftTitlePageSubtitle" type="text" placeholder="by goblinStudio" />
+          </label>
+          <label>Author / writer
+            <input id="draftTitlePageAuthor" type="text" placeholder="Your name" />
+          </label>
+          <label>Watermark
+            <input id="draftWatermark" type="text" placeholder="Confidential" />
+          </label>
         </div>
         <div class="draft-preview-shell">
+          <div class="draft-preview-controls">
+            <div class="draft-view-toggle" role="group" aria-label="Preview layout">
+              <button class="icon-button with-icon" data-icon="scroll" id="draftViewScroll">Scroll view</button>
+              <button class="icon-button with-icon" data-icon="spread" id="draftViewSpread">Side by side</button>
+            </div>
+            <div class="draft-export">
+              <button id="downloadDraft" class="icon-button with-icon" data-icon="download">Download PDF</button>
+            </div>
+          </div>
           <div class="draft-preview" id="draftPreview" aria-label="PDF draft preview"></div>
         </div>
       </div>

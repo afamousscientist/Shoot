@@ -4,7 +4,8 @@ const state = {
   currentProject: null,
   selectedPageId: null,
   orientation: 'horizontal',
-  noteEdit: null
+  noteEdit: null,
+  draftViewMode: 'scroll'
 };
 
 let draggingPageId = null;
@@ -39,6 +40,14 @@ const els = {
   draftName: document.getElementById('draftName'),
   saveDraftVersion: document.getElementById('saveDraftVersion'),
   refreshDraftPreview: document.getElementById('refreshDraftPreview'),
+  includeTitlePage: document.getElementById('includeTitlePage'),
+  draftTitlePageTitle: document.getElementById('draftTitlePageTitle'),
+  draftTitlePageSubtitle: document.getElementById('draftTitlePageSubtitle'),
+  draftTitlePageAuthor: document.getElementById('draftTitlePageAuthor'),
+  draftWatermark: document.getElementById('draftWatermark'),
+  draftViewScroll: document.getElementById('draftViewScroll'),
+  draftViewSpread: document.getElementById('draftViewSpread'),
+  downloadDraft: document.getElementById('downloadDraft'),
   noteTitle: document.getElementById('noteTitle'),
   noteColor: document.getElementById('noteColor'),
   noteBody: document.getElementById('noteBody'),
@@ -83,6 +92,7 @@ function normalizeProjectShape(project) {
   return {
     ...project,
     draftVersions: Array.isArray(project.draftVersions) ? project.draftVersions : [],
+    draftSettings: project.draftSettings || {},
     noteLibrary: Array.isArray(project.noteLibrary) ? project.noteLibrary : [],
     pages: project.pages.map(normalizePageShape)
   };
@@ -409,7 +419,7 @@ function formatDraftLine(block) {
   return `${indent}${normalized}`.trimEnd();
 }
 
-function buildDraftFromProject(project) {
+function buildDraftLines(project) {
   const lines = [];
   (project.pages || []).forEach((page, pageIdx) => {
     (page.blocks || []).forEach(block => {
@@ -418,11 +428,212 @@ function buildDraftFromProject(project) {
     });
     if (pageIdx < (project.pages.length - 1)) lines.push('');
   });
-  return lines.join('\n');
+  return lines;
 }
 
-function renderDraftPreview(text) {
-  els.draftPreview.textContent = text || 'No draft to display yet.';
+function buildDraftFromProject(project) {
+  return buildDraftLines(project).join('\n');
+}
+
+function getDraftSettings(overrides = {}) {
+  const project = state.currentProject;
+  const stored = project?.draftSettings || {};
+  const defaults = {
+    includeTitlePage: false,
+    titlePageTitle: project?.name || 'Shoot!',
+    titlePageSubtitle: 'by goblinStudio',
+    titlePageAuthor: '',
+    watermark: '',
+    viewMode: state.draftViewMode || 'scroll'
+  };
+  return { ...defaults, ...stored, ...overrides };
+}
+
+function hydrateDraftSettingsForm() {
+  const settings = getDraftSettings();
+  els.includeTitlePage.checked = !!settings.includeTitlePage;
+  els.draftTitlePageTitle.value = settings.titlePageTitle || '';
+  els.draftTitlePageSubtitle.value = settings.titlePageSubtitle || '';
+  els.draftTitlePageAuthor.value = settings.titlePageAuthor || '';
+  els.draftWatermark.value = settings.watermark || '';
+  toggleDraftView(settings.viewMode, false);
+}
+
+function persistDraftSettings() {
+  if (!state.currentProject) return;
+  state.currentProject.draftSettings = {
+    includeTitlePage: els.includeTitlePage.checked,
+    titlePageTitle: els.draftTitlePageTitle.value,
+    titlePageSubtitle: els.draftTitlePageSubtitle.value,
+    titlePageAuthor: els.draftTitlePageAuthor.value,
+    watermark: els.draftWatermark.value,
+    viewMode: state.draftViewMode
+  };
+}
+
+function splitIntoPages(lines, settings) {
+  const MAX_LINES = 55;
+  const pages = [];
+  let buffer = [];
+  lines.forEach(line => {
+    if (buffer.length >= MAX_LINES) {
+      pages.push({ lines: buffer });
+      buffer = [];
+    }
+    buffer.push(line || ' ');
+  });
+  if (buffer.length) pages.push({ lines: buffer });
+  return pages;
+}
+
+function buildDraftPreviewData(fromText) {
+  const settings = getDraftSettings();
+  const projectTitle = settings.titlePageTitle || state.currentProject?.name || 'Shoot!';
+  const baseLines = Array.isArray(fromText) ? fromText : (fromText || '').split('\n');
+  const lines = baseLines.length ? baseLines : [''];
+  const pages = splitIntoPages(lines, settings);
+  if (settings.includeTitlePage) {
+    pages.unshift({
+      isTitle: true,
+      title: projectTitle,
+      subtitle: settings.titlePageSubtitle,
+      author: settings.titlePageAuthor
+    });
+  }
+  return { pages, settings, projectTitle };
+}
+
+function renderDraftPreview(preview) {
+  els.draftPreview.innerHTML = '';
+  if (!preview || !preview.pages.length) {
+    els.draftPreview.textContent = 'No draft to display yet.';
+    return;
+  }
+  const wrapper = document.createElement('div');
+  wrapper.className = `draft-pages ${preview.settings.viewMode === 'spread' ? 'spread' : 'scroll'}`;
+  preview.pages.forEach((page, idx) => {
+    const pageEl = document.createElement('div');
+    pageEl.className = 'draft-page';
+    if (page.isTitle) pageEl.classList.add('title-page');
+
+    const header = document.createElement('div');
+    header.className = 'draft-page-header';
+    const title = document.createElement('span');
+    title.textContent = preview.projectTitle;
+    header.appendChild(title);
+    if (!page.isTitle) {
+      const number = document.createElement('span');
+      const numberIndex = idx + 1 - (preview.settings.includeTitlePage ? 1 : 0);
+      number.textContent = `Page ${Math.max(1, numberIndex)}`;
+      header.appendChild(number);
+    }
+    pageEl.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'draft-page-body';
+    if (page.isTitle) {
+      const t = document.createElement('div');
+      t.className = 'title-line main';
+      t.textContent = page.title || 'Title';
+      const sub = document.createElement('div');
+      sub.className = 'title-line sub';
+      sub.textContent = page.subtitle || '';
+      const by = document.createElement('div');
+      by.className = 'title-line by';
+      by.textContent = page.author ? `by ${page.author}` : '';
+      body.append(t, sub, by);
+    } else {
+      page.lines.forEach(text => {
+        const line = document.createElement('div');
+        line.className = 'draft-line';
+        line.textContent = text || ' ';
+        body.appendChild(line);
+      });
+    }
+    pageEl.appendChild(body);
+
+    const footer = document.createElement('div');
+    footer.className = 'draft-page-footer';
+    footer.textContent = preview.projectTitle;
+    if (!page.isTitle) {
+      const num = document.createElement('span');
+      num.textContent = `${Math.max(1, idx + 1 - (preview.settings.includeTitlePage ? 1 : 0))}`;
+      footer.appendChild(num);
+    }
+    pageEl.appendChild(footer);
+
+    if (preview.settings.watermark) {
+      const mark = document.createElement('div');
+      mark.className = 'draft-watermark';
+      mark.textContent = preview.settings.watermark;
+      pageEl.appendChild(mark);
+    }
+
+  wrapper.appendChild(pageEl);
+  });
+  els.draftPreview.appendChild(wrapper);
+}
+
+function renderCurrentDraftPreview() {
+  if (!state.currentProject) return;
+  renderDraftPreview(buildDraftPreviewData(buildDraftFromProject(state.currentProject)));
+}
+
+function toggleDraftView(mode, rerender = true) {
+  state.draftViewMode = mode;
+  if (mode === 'spread') {
+    els.draftViewSpread.classList.add('active');
+    els.draftViewScroll.classList.remove('active');
+  } else {
+    els.draftViewScroll.classList.add('active');
+    els.draftViewSpread.classList.remove('active');
+  }
+  if (rerender) renderCurrentDraftPreview();
+}
+
+function buildPrintableHtml(preview) {
+  const pagesHtml = preview.pages.map((page, idx) => {
+    const numberIndex = idx + 1 - (preview.settings.includeTitlePage ? 1 : 0);
+    const header = page.isTitle ? '' : `<div class="draft-page-header"><span>${preview.projectTitle}</span><span>Page ${Math.max(1, numberIndex)}</span></div>`;
+    const footer = page.isTitle ? '' : `<div class="draft-page-footer">${preview.projectTitle}<span>${Math.max(1, numberIndex)}</span></div>`;
+    const watermark = preview.settings.watermark ? `<div class="draft-watermark">${preview.settings.watermark}</div>` : '';
+    const body = page.isTitle
+      ? `<div class="draft-page-body title-body"><div class="title-line main">${page.title || ''}</div><div class="title-line sub">${page.subtitle || ''}</div><div class="title-line by">${page.author ? `by ${page.author}` : ''}</div></div>`
+      : `<div class="draft-page-body">${page.lines.map(t => {
+        const safe = (t || ' ').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        return `<div class="draft-line">${safe}</div>`;
+      }).join('')}</div>`;
+    return `<div class="draft-page ${page.isTitle ? 'title-page' : ''}">${header}${body}${footer}${watermark}</div>`;
+  }).join('');
+
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${preview.projectTitle} draft</title>
+    <style>
+      body{margin:0;background:#dfe9fb;font-family:'Courier New',monospace;color:#111;}
+      .draft-pages{padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;}
+      .draft-page{position:relative;background:#fff;border:1px solid #b6c8e6;border-radius:12px;box-shadow:0 10px 28px rgba(0,32,92,.18);padding:72px 60px 60px;min-height:880px;overflow:hidden;}
+      .draft-page-header{position:absolute;top:18px;left:28px;right:28px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:0.4px;color:#123;}
+      .draft-page-footer{position:absolute;bottom:18px;left:28px;right:28px;display:flex;justify-content:space-between;font-size:12px;letter-spacing:0.4px;color:#123;}
+      .draft-page-body{margin-top:12px;line-height:1.4;}
+      .draft-line{white-space:pre-wrap;margin:0.1em 0;}
+      .draft-watermark{position:absolute;inset:20% 5%;display:flex;align-items:center;justify-content:center;font-size:48px;letter-spacing:4px;color:rgba(0,0,0,0.08);transform:rotate(-20deg);}
+      .title-body{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:120px;}
+      .title-line.main{font-size:28px;letter-spacing:1px;font-weight:700;}
+      .title-line.sub{font-size:16px;}
+      .title-line.by{font-size:16px;font-style:italic;}
+      @page { margin: 20mm 18mm; }
+    </style></head><body><div class="draft-pages">${pagesHtml}</div></body></html>`;
+}
+
+function downloadDraftPdf() {
+  if (!state.currentProject) return;
+  const preview = buildDraftPreviewData(buildDraftFromProject(state.currentProject));
+  const html = buildPrintableHtml(preview);
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 200);
 }
 
 function renderDraftVersions() {
@@ -442,7 +653,7 @@ function renderDraftVersions() {
     row.type = 'button';
     row.innerHTML = `<strong>${version.name}</strong><span class="muted small">${new Date(version.createdAt).toLocaleString()}</span>`;
     row.addEventListener('click', () => {
-      renderDraftPreview(version.body);
+      renderDraftPreview(buildDraftPreviewData(version.body));
       els.draftName.value = version.name;
     });
     els.draftVersionList.appendChild(row);
@@ -452,8 +663,9 @@ function renderDraftVersions() {
 function openDraftModal() {
   if (!state.currentProject) return;
   captureScriptToState();
+  hydrateDraftSettingsForm();
   renderDraftVersions();
-  renderDraftPreview(buildDraftFromProject(state.currentProject));
+  renderDraftPreview(buildDraftPreviewData(buildDraftFromProject(state.currentProject)));
   els.draftModal.classList.remove('hidden');
 }
 
@@ -464,12 +676,14 @@ function closeDraftModal() {
 function refreshDraftPreview() {
   if (!state.currentProject) return;
   captureScriptToState();
-  renderDraftPreview(buildDraftFromProject(state.currentProject));
+  persistDraftSettings();
+  renderDraftPreview(buildDraftPreviewData(buildDraftFromProject(state.currentProject)));
 }
 
 function saveDraftVersion() {
   if (!state.currentProject) return;
   captureScriptToState();
+  persistDraftSettings();
   const body = buildDraftFromProject(state.currentProject);
   const fallback = `Version ${Math.max(1, (state.currentProject.draftVersions?.length || 0) + 1)}`;
   const name = (els.draftName.value || '').trim() || fallback;
@@ -483,7 +697,7 @@ function saveDraftVersion() {
   state.currentProject.draftVersions.unshift(version);
   els.draftName.value = name;
   renderDraftVersions();
-  renderDraftPreview(body);
+  renderDraftPreview(buildDraftPreviewData(body));
   saveProject();
 }
 
@@ -829,6 +1043,15 @@ function registerEvents() {
   els.closeDrafts.addEventListener('click', closeDraftModal);
   els.refreshDraftPreview.addEventListener('click', refreshDraftPreview);
   els.saveDraftVersion.addEventListener('click', saveDraftVersion);
+  [els.includeTitlePage, els.draftTitlePageTitle, els.draftTitlePageSubtitle, els.draftTitlePageAuthor, els.draftWatermark].forEach(input => {
+    input.addEventListener('input', () => {
+      persistDraftSettings();
+      renderCurrentDraftPreview();
+    });
+  });
+  els.draftViewScroll.addEventListener('click', () => toggleDraftView('scroll'));
+  els.draftViewSpread.addEventListener('click', () => toggleDraftView('spread'));
+  els.downloadDraft.addEventListener('click', downloadDraftPdf);
   [els.noteTitle, els.noteColor, els.noteBody].forEach(input => {
     input.addEventListener('input', renderNotePreview);
   });
