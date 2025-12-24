@@ -76,16 +76,52 @@ function setProjectTitle(name = 'No project loaded') {
 
 setProjectTitle('No project loaded');
 
+function formatTime(seconds) {
+  const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0));
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+function parseTimeInput(value) {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  if (trimmed === '') return 0;
+  if (trimmed.includes(':')) {
+    const [minsRaw, secsRaw] = trimmed.split(':');
+    const mins = Number(minsRaw);
+    const secs = Number(secsRaw);
+    if (!Number.isFinite(mins) || !Number.isFinite(secs)) return null;
+    const clampedSecs = Math.min(59, Math.max(0, secs));
+    return Math.max(0, Math.round(mins * 60 + clampedSecs));
+  }
+  const minutes = Number(trimmed);
+  if (!Number.isFinite(minutes)) return null;
+  return Math.max(0, Math.round(minutes * 60));
+}
+
+function normalizeTimeValue(value, unit = 'minutes') {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'string') {
+    const parsed = parseTimeInput(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  if (unit === 'seconds') return Math.max(0, Math.round(numeric));
+  return Math.max(0, Math.round(numeric * 60));
+}
+
 function updateTimingSummary() {
   if (!state.currentProject) {
-    els.totalTimeDisplay.textContent = 'Total: 0';
+    els.totalTimeDisplay.textContent = 'Total: 0:00';
     els.totalTimeDisplay.className = 'timing-total timing-none';
     return;
   }
   const total = state.currentProject.pages.reduce((sum, page) => sum + (Number(page.time) || 0), 0);
   const goal = Number(state.currentProject.goalTime) || 0;
-  const goalSuffix = goal > 0 ? ` / ${goal} min` : '';
-  els.totalTimeDisplay.textContent = `Total: ${total} min${goalSuffix}`;
+  const goalSuffix = goal > 0 ? ` / ${formatTime(goal)}` : '';
+  els.totalTimeDisplay.textContent = `Total: ${formatTime(total)}${goalSuffix}`;
   els.totalTimeDisplay.className = 'timing-total';
   if (goal <= 0) {
     els.totalTimeDisplay.classList.add('timing-none');
@@ -98,11 +134,11 @@ function updateTimingSummary() {
   }
 }
 
-function normalizePageShape(page) {
+function normalizePageShape(page, timeUnit = 'minutes') {
   const normalized = { ...page };
   normalized.type = normalized.type || normalized.block || 'Shot';
   normalized.synopsis = normalized.synopsis ?? normalized.summary ?? '';
-  normalized.time = Number.isFinite(Number(normalized.time)) ? Number(normalized.time) : 0;
+  normalized.time = normalizeTimeValue(normalized.time, timeUnit);
   normalized.directorNotes = Array.isArray(normalized.directorNotes) ? normalized.directorNotes : [];
   if (!Array.isArray(normalized.blocks)) {
     const seedText = (normalized.text || '').split('\n').filter(line => line !== '');
@@ -117,13 +153,15 @@ function normalizePageShape(page) {
 }
 
 function normalizeProjectShape(project) {
+  const timeUnit = project.timeUnit === 'seconds' ? 'seconds' : 'minutes';
   return {
     ...project,
-    goalTime: Number.isFinite(Number(project.goalTime)) ? Number(project.goalTime) : 0,
+    timeUnit: 'seconds',
+    goalTime: normalizeTimeValue(project.goalTime, timeUnit),
     draftVersions: Array.isArray(project.draftVersions) ? project.draftVersions : [],
     draftSettings: project.draftSettings || {},
     noteLibrary: Array.isArray(project.noteLibrary) ? project.noteLibrary : [],
-    pages: project.pages.map(normalizePageShape)
+    pages: project.pages.map(page => normalizePageShape(page, timeUnit))
   };
 }
 
@@ -236,16 +274,18 @@ function renderPages() {
     const timeCell = document.createElement('td');
     timeCell.className = 'time-cell';
     const timeInput = document.createElement('input');
-    timeInput.type = 'number';
-    timeInput.min = '0';
-    timeInput.step = '1';
+    timeInput.type = 'text';
     timeInput.inputMode = 'numeric';
-    timeInput.placeholder = '0';
-    timeInput.value = Number.isFinite(page.time) && page.time > 0 ? String(page.time) : '';
+    timeInput.placeholder = '0:00';
+    timeInput.value = Number.isFinite(page.time) && page.time > 0 ? formatTime(page.time) : '';
     timeInput.addEventListener('input', e => {
-      const nextValue = Number(e.target.value);
-      page.time = Number.isFinite(nextValue) ? Math.max(0, nextValue) : 0;
+      const parsed = parseTimeInput(e.target.value);
+      if (parsed === null) return;
+      page.time = parsed;
       updateTimingSummary();
+    });
+    timeInput.addEventListener('blur', e => {
+      e.target.value = page.time > 0 ? formatTime(page.time) : '';
     });
     timeInput.addEventListener('click', e => e.stopPropagation());
     timeInput.addEventListener('dblclick', e => e.stopPropagation());
@@ -1038,14 +1078,12 @@ function handleDirectorDrop(e) {
 async function saveProject() {
   if (!state.currentProject) return;
   captureScriptToState();
+  state.currentProject.timeUnit = 'seconds';
   const updated = await fetchJson(`/api/projects/${state.currentProject.id}`, {
     method: 'PUT',
     body: JSON.stringify(state.currentProject)
   });
-  state.currentProject = {
-    ...updated,
-    pages: updated.pages.map(normalizePageShape)
-  };
+  state.currentProject = normalizeProjectShape(updated);
   const idx = state.projects.findIndex(p => p.id === updated.id);
   if (idx !== -1) state.projects[idx] = state.currentProject;
   renderPages();
@@ -1070,7 +1108,7 @@ async function openProjectById(id) {
   state.currentProject = normalized;
   state.selectedPageId = normalized.pages[0]?.id || null;
   setProjectTitle(normalized.name);
-  els.goalTimeInput.value = normalized.goalTime > 0 ? String(normalized.goalTime) : '';
+  els.goalTimeInput.value = normalized.goalTime > 0 ? formatTime(normalized.goalTime) : '';
   updateTimingSummary();
   els.draftName.value = '';
   const existing = state.projects.findIndex(p => p.id === normalized.id);
@@ -1244,9 +1282,14 @@ function registerEvents() {
   els.closeDrafts.addEventListener('click', closeDraftModal);
   els.goalTimeInput.addEventListener('input', e => {
     if (!state.currentProject) return;
-    const nextValue = Number(e.target.value);
-    state.currentProject.goalTime = Number.isFinite(nextValue) ? Math.max(0, nextValue) : 0;
+    const parsed = parseTimeInput(e.target.value);
+    if (parsed === null) return;
+    state.currentProject.goalTime = parsed;
     updateTimingSummary();
+  });
+  els.goalTimeInput.addEventListener('blur', e => {
+    if (!state.currentProject) return;
+    e.target.value = state.currentProject.goalTime > 0 ? formatTime(state.currentProject.goalTime) : '';
   });
   els.refreshDraftPreview.addEventListener('click', refreshDraftPreview);
   els.saveDraftVersion.addEventListener('click', saveDraftVersion);

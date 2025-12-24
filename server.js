@@ -152,6 +152,7 @@ const server = http.createServer(async (req, res) => {
             id: `proj-${Date.now()}`,
             name,
             goalTime: 0,
+            timeUnit: 'seconds',
             draftVersions: [],
             noteLibrary: [],
             pages: [
