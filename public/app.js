@@ -27,6 +27,8 @@ const els = {
   openSelect: document.getElementById('openProjectSelect'),
   recentList: document.getElementById('recentList'),
   headerProjectTitle: document.getElementById('headerProjectTitle'),
+  goalTimeInput: document.getElementById('goalTimeInput'),
+  totalTimeDisplay: document.getElementById('totalTimeDisplay'),
   renameProject: document.getElementById('renameProject'),
   layout: document.getElementById('layout'),
   orientationToggle: document.getElementById('orientationToggle'),
@@ -74,10 +76,33 @@ function setProjectTitle(name = 'No project loaded') {
 
 setProjectTitle('No project loaded');
 
+function updateTimingSummary() {
+  if (!state.currentProject) {
+    els.totalTimeDisplay.textContent = 'Total: 0';
+    els.totalTimeDisplay.className = 'timing-total timing-none';
+    return;
+  }
+  const total = state.currentProject.pages.reduce((sum, page) => sum + (Number(page.time) || 0), 0);
+  const goal = Number(state.currentProject.goalTime) || 0;
+  const goalSuffix = goal > 0 ? ` / ${goal} min` : '';
+  els.totalTimeDisplay.textContent = `Total: ${total} min${goalSuffix}`;
+  els.totalTimeDisplay.className = 'timing-total';
+  if (goal <= 0) {
+    els.totalTimeDisplay.classList.add('timing-none');
+  } else if (total > goal) {
+    els.totalTimeDisplay.classList.add('timing-over');
+  } else if (total / goal <= 0.6) {
+    els.totalTimeDisplay.classList.add('timing-low');
+  } else {
+    els.totalTimeDisplay.classList.add('timing-ok');
+  }
+}
+
 function normalizePageShape(page) {
   const normalized = { ...page };
   normalized.type = normalized.type || normalized.block || 'Shot';
   normalized.synopsis = normalized.synopsis ?? normalized.summary ?? '';
+  normalized.time = Number.isFinite(Number(normalized.time)) ? Number(normalized.time) : 0;
   normalized.directorNotes = Array.isArray(normalized.directorNotes) ? normalized.directorNotes : [];
   if (!Array.isArray(normalized.blocks)) {
     const seedText = (normalized.text || '').split('\n').filter(line => line !== '');
@@ -94,6 +119,7 @@ function normalizePageShape(page) {
 function normalizeProjectShape(project) {
   return {
     ...project,
+    goalTime: Number.isFinite(Number(project.goalTime)) ? Number(project.goalTime) : 0,
     draftVersions: Array.isArray(project.draftVersions) ? project.draftVersions : [],
     draftSettings: project.draftSettings || {},
     noteLibrary: Array.isArray(project.noteLibrary) ? project.noteLibrary : [],
@@ -207,7 +233,25 @@ function renderPages() {
     synopsisCell.dataset.field = 'synopsis';
     synopsisCell.textContent = page.synopsis || '';
 
-    row.append(indexCell, titleCell, typeCell, synopsisCell);
+    const timeCell = document.createElement('td');
+    timeCell.className = 'time-cell';
+    const timeInput = document.createElement('input');
+    timeInput.type = 'number';
+    timeInput.min = '0';
+    timeInput.step = '1';
+    timeInput.inputMode = 'numeric';
+    timeInput.placeholder = '0';
+    timeInput.value = Number.isFinite(page.time) && page.time > 0 ? String(page.time) : '';
+    timeInput.addEventListener('input', e => {
+      const nextValue = Number(e.target.value);
+      page.time = Number.isFinite(nextValue) ? Math.max(0, nextValue) : 0;
+      updateTimingSummary();
+    });
+    timeInput.addEventListener('click', e => e.stopPropagation());
+    timeInput.addEventListener('dblclick', e => e.stopPropagation());
+    timeCell.appendChild(timeInput);
+
+    row.append(indexCell, titleCell, typeCell, synopsisCell, timeCell);
     row.addEventListener('dblclick', () => selectPage(page.id));
     row.addEventListener('dragstart', e => {
       draggingPageId = page.id;
@@ -241,6 +285,7 @@ function renderPages() {
     }
     els.pageTable.appendChild(row);
   });
+  updateTimingSummary();
 }
 
 function clearDragHighlights() {
@@ -1025,6 +1070,8 @@ async function openProjectById(id) {
   state.currentProject = normalized;
   state.selectedPageId = normalized.pages[0]?.id || null;
   setProjectTitle(normalized.name);
+  els.goalTimeInput.value = normalized.goalTime > 0 ? String(normalized.goalTime) : '';
+  updateTimingSummary();
   els.draftName.value = '';
   const existing = state.projects.findIndex(p => p.id === normalized.id);
   if (existing !== -1) state.projects[existing] = normalized;
@@ -1044,6 +1091,7 @@ function addPage(afterPageId = null) {
     title: `Page ${pages.length + 1}`,
     type: 'Shot',
     synopsis: '',
+    time: 0,
     directorNotes: [],
     blocks: [
       { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },
@@ -1194,6 +1242,12 @@ function registerEvents() {
   els.saveProject.addEventListener('click', saveProject);
   els.openDrafts.addEventListener('click', openDraftModal);
   els.closeDrafts.addEventListener('click', closeDraftModal);
+  els.goalTimeInput.addEventListener('input', e => {
+    if (!state.currentProject) return;
+    const nextValue = Number(e.target.value);
+    state.currentProject.goalTime = Number.isFinite(nextValue) ? Math.max(0, nextValue) : 0;
+    updateTimingSummary();
+  });
   els.refreshDraftPreview.addEventListener('click', refreshDraftPreview);
   els.saveDraftVersion.addEventListener('click', saveDraftVersion);
   [els.includeTitlePage, els.draftTitlePageTitle, els.draftTitlePageSubtitle, els.draftTitlePageAuthor, els.draftWatermark].forEach(input => {

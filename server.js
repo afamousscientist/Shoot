@@ -151,6 +151,7 @@ const server = http.createServer(async (req, res) => {
           const project = {
             id: `proj-${Date.now()}`,
             name,
+            goalTime: 0,
             draftVersions: [],
             noteLibrary: [],
             pages: [
@@ -159,6 +160,7 @@ const server = http.createServer(async (req, res) => {
                 title: 'Page 1',
                 type: 'Shot',
                 synopsis: 'Establishing page',
+                time: 0,
                 directorNotes: [],
                 blocks: [
                   { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },

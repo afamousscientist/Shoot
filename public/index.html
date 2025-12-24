@@ -21,6 +21,12 @@
           <span class="label">Project</span>
           <span class="header-project-title" id="headerProjectTitle">No project loaded</span>
         </div>
+        <div class="header-project-timing">
+          <label class="timing-field">Goal time
+            <input id="goalTimeInput" type="number" min="0" step="1" placeholder="120" />
+          </label>
+          <div class="timing-total" id="totalTimeDisplay" aria-live="polite">Total: 0</div>
+        </div>
         <div class="header-actions inline">
           <button id="openDrafts" class="icon-button icon-only with-icon" data-icon="pdf" title="PDF drafts" aria-label="Open PDF drafts"></button>
           <button id="renameProject" class="icon-button icon-only with-icon" data-icon="rename" title="Rename project" aria-label="Rename project"></button>
@@ -69,6 +75,7 @@
                 <th>Title</th>
                 <th>Type</th>
                 <th>Synopsis</th>
+                <th>Time</th>
               </tr>
             </thead>
             <tbody></tbody>

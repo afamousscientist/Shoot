@@ -143,6 +143,66 @@ body {
   gap: 2px;
 }
 
+.header-project-timing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timing-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(230, 240, 255, 0.8);
+}
+
+.timing-field input {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(13, 35, 68, 0.35);
+  color: #f9fbff;
+  font-size: 0.85rem;
+  min-width: 90px;
+}
+
+.timing-total {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  background: rgba(13, 35, 68, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #d7e8ff;
+  min-width: 140px;
+  text-align: center;
+}
+
+.timing-total.timing-none {
+  color: rgba(215, 232, 255, 0.7);
+}
+
+.timing-total.timing-low {
+  background: rgba(72, 152, 255, 0.25);
+  border-color: rgba(105, 176, 255, 0.6);
+  color: #cfe3ff;
+}
+
+.timing-total.timing-ok {
+  background: rgba(88, 210, 140, 0.22);
+  border-color: rgba(125, 230, 160, 0.5);
+  color: #d2ffe6;
+}
+
+.timing-total.timing-over {
+  background: rgba(255, 92, 92, 0.24);
+  border-color: rgba(255, 134, 134, 0.5);
+  color: #ffd1d1;
+}
+
 .header-project .label {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -451,6 +511,21 @@ button.primary {
   position: relative;
   border-radius: 6px;
   min-height: 28px;
+}
+
+.time-cell input {
+  width: 72px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  color: #f4f9ff;
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.time-cell input:focus {
+  outline: 2px solid rgba(120, 180, 245, 0.55);
 }
 
 .editable-cell[contenteditable="true"] {
