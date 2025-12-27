@@ -415,6 +415,19 @@ button.primary {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+.node-editor-fields {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.node-editor-fields input {
+  background: rgba(10, 20, 40, 0.45);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f4f9ff;
+}
+
 .node-editor.hidden {
   display: none;
 }
@@ -444,6 +457,12 @@ button.primary {
   padding-top: 6px;
 }
 
+.node-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .node-graph {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -460,11 +479,35 @@ button.primary {
   color: #f1f7ff;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease;
+  position: relative;
 }
 
 .node-card:hover {
   transform: translateY(-2px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 14px 26px rgba(0, 30, 70, 0.4);
+}
+
+.node-card.selected {
+  outline: 2px solid rgba(125, 184, 246, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 0 3px rgba(125, 184, 246, 0.25);
+}
+
+.node-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(10, 20, 40, 0.4);
+  color: #f8fbff;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.node-delete:hover {
+  background: rgba(255, 90, 90, 0.35);
 }
 
 .node-card .node-title {
@@ -475,10 +518,24 @@ button.primary {
   color: rgba(230, 240, 255, 0.9);
 }
 
+.node-card .node-sublabel {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: rgba(230, 240, 255, 0.75);
+}
+
 .node-card .node-meta {
   margin-top: 8px;
   font-size: 0.8rem;
   color: rgba(230, 240, 255, 0.7);
+}
+
+.node-links {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
 }
 
 .rundown { grid-area: rundown; }

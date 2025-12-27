@@ -8,7 +8,8 @@ const state = {
   draftViewMode: 'scroll',
   draftFormat: 'script',
   editorMode: 'script',
-  nodeEditPageId: null
+  nodeEditPageId: null,
+  flowSelectedNodeId: null
 };
 
 let draggingPageId = null;
@@ -72,6 +73,10 @@ const els = {
   nodeEditorPanel: document.getElementById('nodeEditorPanel'),
   nodeEditorInput: document.getElementById('nodeEditorInput'),
   nodeEditorTitle: document.getElementById('nodeEditorTitle'),
+  nodeLabelInput: document.getElementById('nodeLabelInput'),
+  nodeSublabelInput: document.getElementById('nodeSublabelInput'),
+  addNode: document.getElementById('addNode'),
+  nodeLinks: document.getElementById('nodeLinks'),
   editorMeta: document.getElementById('editorMeta'),
   lineTypeButtons: document.querySelectorAll('[data-line-type]'),
   directorBox: document.getElementById('directorBox')
@@ -146,7 +151,6 @@ function normalizePageShape(page, timeUnit = 'minutes') {
   normalized.type = normalized.type || normalized.block || 'Shot';
   normalized.synopsis = normalized.synopsis ?? normalized.summary ?? '';
   normalized.time = normalizeTimeValue(normalized.time, timeUnit);
-  normalized.nodeMarkdown = normalized.nodeMarkdown || '';
   normalized.directorNotes = Array.isArray(normalized.directorNotes) ? normalized.directorNotes : [];
   if (!Array.isArray(normalized.blocks)) {
     const seedText = (normalized.text || '').split('\n').filter(line => line !== '');
@@ -169,6 +173,8 @@ function normalizeProjectShape(project) {
     draftVersions: Array.isArray(project.draftVersions) ? project.draftVersions : [],
     draftSettings: project.draftSettings || {},
     noteLibrary: Array.isArray(project.noteLibrary) ? project.noteLibrary : [],
+    flowNodes: Array.isArray(project.flowNodes) ? project.flowNodes : [],
+    flowLinks: Array.isArray(project.flowLinks) ? project.flowLinks : [],
     pages: project.pages.map(page => normalizePageShape(page, timeUnit))
   };
 }
@@ -339,33 +345,130 @@ function renderPages() {
 
 function renderNodeGraph() {
   els.nodeGraph.innerHTML = '';
-  if (!state.currentProject) return;
-  state.currentProject.pages.forEach((page, index) => {
+  if (!state.currentProject) {
+    els.nodeLinks.textContent = '';
+    return;
+  }
+  const nodes = state.currentProject.flowNodes || [];
+  const links = state.currentProject.flowLinks || [];
+  if (!nodes.length) {
+    const empty = document.createElement('div');
+    empty.className = 'muted small';
+    empty.textContent = 'No nodes yet. Add one to start planning.';
+    els.nodeGraph.appendChild(empty);
+    renderNodeLinks();
+    return;
+  }
+  nodes.forEach((nodeData, index) => {
     const node = document.createElement('div');
     node.className = 'node-card';
-    node.dataset.pageId = page.id;
+    if (state.flowSelectedNodeId === nodeData.id) {
+      node.classList.add('selected');
+    }
+    node.dataset.nodeId = nodeData.id;
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'node-delete';
+    deleteButton.title = 'Delete node';
+    deleteButton.textContent = '×';
+    deleteButton.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteFlowNode(nodeData.id);
+    });
     const title = document.createElement('div');
     title.className = 'node-title';
-    title.textContent = `Scene ${index + 1}`;
+    title.textContent = nodeData.label || `Node ${index + 1}`;
+    const sublabel = document.createElement('div');
+    sublabel.className = 'node-sublabel';
+    sublabel.textContent = nodeData.sublabel || '—';
     const meta = document.createElement('div');
     meta.className = 'node-meta';
-    meta.textContent = page.title || page.type || 'Untitled';
-    node.append(title, meta);
+    const outgoing = links.filter(link => link.from === nodeData.id).length;
+    meta.textContent = outgoing ? `${outgoing} link${outgoing === 1 ? '' : 's'}` : 'No links';
+    node.append(deleteButton, title, sublabel, meta);
+    node.addEventListener('click', () => handleNodeSelect(nodeData.id));
     node.addEventListener('dblclick', e => {
       e.stopPropagation();
-      enterNodeEditor(page.id);
+      enterNodeEditor(nodeData.id);
     });
     els.nodeGraph.appendChild(node);
   });
+  renderNodeLinks();
 }
 
-function enterNodeEditor(pageId) {
-  const page = state.currentProject.pages.find(p => p.id === pageId);
-  if (!page) return;
+function handleNodeSelect(nodeId) {
+  if (!state.currentProject) return;
+  if (state.flowSelectedNodeId && state.flowSelectedNodeId !== nodeId) {
+    addFlowLink(state.flowSelectedNodeId, nodeId);
+    state.flowSelectedNodeId = null;
+  } else {
+    state.flowSelectedNodeId = nodeId;
+  }
+  renderNodeGraph();
+}
+
+function renderNodeLinks() {
+  if (!state.currentProject) return;
+  const links = state.currentProject.flowLinks || [];
+  if (!links.length) {
+    els.nodeLinks.textContent = 'No connections yet.';
+    return;
+  }
+  const nodeLabelById = Object.fromEntries(
+    (state.currentProject.flowNodes || []).map(node => [node.id, node.label || 'Node'])
+  );
+  els.nodeLinks.textContent = links
+    .map(link => `${nodeLabelById[link.from] || 'Node'} → ${nodeLabelById[link.to] || 'Node'}`)
+    .join(' • ');
+}
+
+function addFlowNode() {
+  if (!state.currentProject) return;
+  const nodes = state.currentProject.flowNodes || [];
+  const id = `flow-${Date.now()}`;
+  nodes.push({
+    id,
+    label: `Node ${nodes.length + 1}`,
+    sublabel: '',
+    markdown: ''
+  });
+  state.currentProject.flowNodes = nodes;
+  renderNodeGraph();
+}
+
+function deleteFlowNode(nodeId) {
+  if (!state.currentProject) return;
+  state.currentProject.flowNodes = (state.currentProject.flowNodes || []).filter(node => node.id !== nodeId);
+  state.currentProject.flowLinks = (state.currentProject.flowLinks || []).filter(link => link.from !== nodeId && link.to !== nodeId);
+  if (state.nodeEditPageId === nodeId) {
+    exitNodeEditor();
+  }
+  if (state.flowSelectedNodeId === nodeId) {
+    state.flowSelectedNodeId = null;
+  }
+  renderNodeGraph();
+}
+
+function addFlowLink(fromId, toId) {
+  if (!state.currentProject) return;
+  if (fromId === toId) return;
+  const links = state.currentProject.flowLinks || [];
+  const exists = links.some(link => link.from === fromId && link.to === toId);
+  if (!exists) {
+    links.push({ from: fromId, to: toId });
+  }
+  state.currentProject.flowLinks = links;
+}
+
+function enterNodeEditor(nodeId) {
+  const node = (state.currentProject.flowNodes || []).find(item => item.id === nodeId);
+  if (!node) return;
   state.editorMode = 'node';
-  state.nodeEditPageId = pageId;
-  els.nodeEditorTitle.textContent = page.title || `Scene ${state.currentProject.pages.indexOf(page) + 1}`;
-  els.nodeEditorInput.value = page.nodeMarkdown || '';
+  state.nodeEditPageId = nodeId;
+  els.nodeEditorTitle.textContent = node.label || 'Node';
+  els.nodeLabelInput.value = node.label || '';
+  els.nodeSublabelInput.value = node.sublabel || '';
+  els.nodeEditorInput.value = node.markdown || '';
   els.scriptEditor.classList.add('hidden');
   els.nodeEditorPanel.classList.remove('hidden');
 }
@@ -1100,9 +1203,9 @@ function renderDirectorNotes(page) {
 
 function updateNodeMarkdown(value) {
   if (!state.currentProject || !state.nodeEditPageId) return;
-  const page = state.currentProject.pages.find(p => p.id === state.nodeEditPageId);
-  if (!page) return;
-  page.nodeMarkdown = value;
+  const node = (state.currentProject.flowNodes || []).find(item => item.id === state.nodeEditPageId);
+  if (!node) return;
+  node.markdown = value;
 }
 
 function attachNoteToPage(note) {
@@ -1173,6 +1276,7 @@ async function openProjectById(id) {
   renderNoteLibrary();
   renderPages();
   selectPage(state.selectedPageId);
+  renderNodeGraph();
   showSection('workspace');
   await loadProfile();
   renderRecent();
@@ -1187,7 +1291,6 @@ function addPage(afterPageId = null) {
     type: 'Shot',
     synopsis: '',
     time: 0,
-    nodeMarkdown: '',
     directorNotes: [],
     blocks: [
       { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },
@@ -1202,6 +1305,7 @@ function addPage(afterPageId = null) {
   pages.splice(insertIdx, 0, newPage);
   renderPages();
   selectPage(newPage.id);
+  renderNodeGraph();
 }
 
 function toggleOrientation() {
@@ -1350,6 +1454,22 @@ function registerEvents() {
     e.target.value = state.currentProject.goalTime > 0 ? formatTime(state.currentProject.goalTime) : '';
   });
   els.nodeEditorInput.addEventListener('input', e => updateNodeMarkdown(e.target.value));
+  els.nodeLabelInput.addEventListener('input', e => {
+    if (!state.currentProject || !state.nodeEditPageId) return;
+    const node = (state.currentProject.flowNodes || []).find(item => item.id === state.nodeEditPageId);
+    if (!node) return;
+    node.label = e.target.value.trim();
+    els.nodeEditorTitle.textContent = node.label || 'Node';
+    renderNodeGraph();
+  });
+  els.nodeSublabelInput.addEventListener('input', e => {
+    if (!state.currentProject || !state.nodeEditPageId) return;
+    const node = (state.currentProject.flowNodes || []).find(item => item.id === state.nodeEditPageId);
+    if (!node) return;
+    node.sublabel = e.target.value.trim();
+    renderNodeGraph();
+  });
+  els.addNode.addEventListener('click', addFlowNode);
   els.refreshDraftPreview.addEventListener('click', refreshDraftPreview);
   els.saveDraftVersion.addEventListener('click', saveDraftVersion);
   [els.includeTitlePage, els.draftTitlePageTitle, els.draftTitlePageSubtitle, els.draftTitlePageAuthor, els.draftWatermark].forEach(input => {

@@ -155,6 +155,8 @@ const server = http.createServer(async (req, res) => {
             timeUnit: 'seconds',
             draftVersions: [],
             noteLibrary: [],
+            flowNodes: [],
+            flowLinks: [],
             pages: [
               {
                 id: `page-${Date.now()}`,
@@ -162,7 +164,6 @@ const server = http.createServer(async (req, res) => {
                 type: 'Shot',
                 synopsis: 'Establishing page',
                 time: 0,
-                nodeMarkdown: '',
                 directorNotes: [],
                 blocks: [
                   { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },
