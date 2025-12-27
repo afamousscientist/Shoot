@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shoot! Live Preview</title>
+    <link rel="stylesheet" href="preview.css" />
+  </head>
+  <body>
+    <header class="preview-header">
+      <div class="preview-brand">Shoot! Live PDF Preview</div>
+      <div class="preview-controls">
+        <label>
+          Project
+          <select id="previewProjectSelect"></select>
+        </label>
+        <div class="preview-status" id="previewStatus">Waiting for selection…</div>
+      </div>
+    </header>
+
+    <main class="preview-main">
+      <div class="preview-pages" id="previewPages">
+        <div class="empty">Select a project to view the live PDF preview.</div>
+      </div>
+    </main>
+
+    <script src="preview.js"></script>
+  </body>
+</html>
