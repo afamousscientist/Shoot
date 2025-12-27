@@ -104,6 +104,20 @@
               contenteditable="true"
               spellcheck="false"
             ></div>
+            <div class="node-editor hidden" id="nodeEditorPanel">
+              <div class="node-editor-header">
+                <span class="muted small">Node editor (Markdown)</span>
+                <span class="node-editor-title" id="nodeEditorTitle">Scene node</span>
+              </div>
+              <textarea id="nodeEditorInput" rows="8" placeholder="# Scene Title&#10;Write markdown notes here..."></textarea>
+            </div>
+          </div>
+          <div class="node-graph-panel" id="nodeGraphPanel">
+            <div class="panel-header tight">
+              <div class="with-icon" data-icon="page">Scene Nodes</div>
+              <div class="muted small">Double-click a node to edit Markdown</div>
+            </div>
+            <div class="node-graph" id="nodeGraph"></div>
           </div>
         </section>
 

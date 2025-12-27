@@ -6,7 +6,9 @@ const state = {
   orientation: 'horizontal',
   noteEdit: null,
   draftViewMode: 'scroll',
-  draftFormat: 'script'
+  draftFormat: 'script',
+  editorMode: 'script',
+  nodeEditPageId: null
 };
 
 let draggingPageId = null;
@@ -65,6 +67,11 @@ const els = {
   collapseToolbar: document.getElementById('collapseToolbar'),
   toolItems: document.querySelectorAll('#toolShelf input[type="checkbox"]'),
   scriptEditor: document.getElementById('scriptEditor'),
+  nodeGraph: document.getElementById('nodeGraph'),
+  nodeGraphPanel: document.getElementById('nodeGraphPanel'),
+  nodeEditorPanel: document.getElementById('nodeEditorPanel'),
+  nodeEditorInput: document.getElementById('nodeEditorInput'),
+  nodeEditorTitle: document.getElementById('nodeEditorTitle'),
   editorMeta: document.getElementById('editorMeta'),
   lineTypeButtons: document.querySelectorAll('[data-line-type]'),
   directorBox: document.getElementById('directorBox')
@@ -139,6 +146,7 @@ function normalizePageShape(page, timeUnit = 'minutes') {
   normalized.type = normalized.type || normalized.block || 'Shot';
   normalized.synopsis = normalized.synopsis ?? normalized.summary ?? '';
   normalized.time = normalizeTimeValue(normalized.time, timeUnit);
+  normalized.nodeMarkdown = normalized.nodeMarkdown || '';
   normalized.directorNotes = Array.isArray(normalized.directorNotes) ? normalized.directorNotes : [];
   if (!Array.isArray(normalized.blocks)) {
     const seedText = (normalized.text || '').split('\n').filter(line => line !== '');
@@ -326,6 +334,47 @@ function renderPages() {
     els.pageTable.appendChild(row);
   });
   updateTimingSummary();
+  renderNodeGraph();
+}
+
+function renderNodeGraph() {
+  els.nodeGraph.innerHTML = '';
+  if (!state.currentProject) return;
+  state.currentProject.pages.forEach((page, index) => {
+    const node = document.createElement('div');
+    node.className = 'node-card';
+    node.dataset.pageId = page.id;
+    const title = document.createElement('div');
+    title.className = 'node-title';
+    title.textContent = `Scene ${index + 1}`;
+    const meta = document.createElement('div');
+    meta.className = 'node-meta';
+    meta.textContent = page.title || page.type || 'Untitled';
+    node.append(title, meta);
+    node.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      enterNodeEditor(page.id);
+    });
+    els.nodeGraph.appendChild(node);
+  });
+}
+
+function enterNodeEditor(pageId) {
+  const page = state.currentProject.pages.find(p => p.id === pageId);
+  if (!page) return;
+  state.editorMode = 'node';
+  state.nodeEditPageId = pageId;
+  els.nodeEditorTitle.textContent = page.title || `Scene ${state.currentProject.pages.indexOf(page) + 1}`;
+  els.nodeEditorInput.value = page.nodeMarkdown || '';
+  els.scriptEditor.classList.add('hidden');
+  els.nodeEditorPanel.classList.remove('hidden');
+}
+
+function exitNodeEditor() {
+  state.editorMode = 'script';
+  state.nodeEditPageId = null;
+  els.nodeEditorPanel.classList.add('hidden');
+  els.scriptEditor.classList.remove('hidden');
 }
 
 function clearDragHighlights() {
@@ -392,6 +441,7 @@ function startCellEdit(cell) {
 function selectPage(pageId) {
   const page = state.currentProject.pages.find(p => p.id === pageId);
   if (!page) return;
+  exitNodeEditor();
   exitNoteEdit();
   state.selectedPageId = pageId;
   renderPages();
@@ -1048,6 +1098,13 @@ function renderDirectorNotes(page) {
   });
 }
 
+function updateNodeMarkdown(value) {
+  if (!state.currentProject || !state.nodeEditPageId) return;
+  const page = state.currentProject.pages.find(p => p.id === state.nodeEditPageId);
+  if (!page) return;
+  page.nodeMarkdown = value;
+}
+
 function attachNoteToPage(note) {
   const page = getActivePage();
   if (!page) return;
@@ -1130,6 +1187,7 @@ function addPage(afterPageId = null) {
     type: 'Shot',
     synopsis: '',
     time: 0,
+    nodeMarkdown: '',
     directorNotes: [],
     blocks: [
       { id: `blk-${Date.now()}-scene`, type: 'scene', text: 'INT. LOCATION - DAY' },
@@ -1291,6 +1349,7 @@ function registerEvents() {
     if (!state.currentProject) return;
     e.target.value = state.currentProject.goalTime > 0 ? formatTime(state.currentProject.goalTime) : '';
   });
+  els.nodeEditorInput.addEventListener('input', e => updateNodeMarkdown(e.target.value));
   els.refreshDraftPreview.addEventListener('click', refreshDraftPreview);
   els.saveDraftVersion.addEventListener('click', saveDraftVersion);
   [els.includeTitlePage, els.draftTitlePageTitle, els.draftTitlePageSubtitle, els.draftTitlePageAuthor, els.draftWatermark].forEach(input => {
