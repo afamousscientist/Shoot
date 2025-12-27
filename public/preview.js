@@ -1,12 +1,19 @@
 const els = {
   projectSelect: document.getElementById('previewProjectSelect'),
   previewPages: document.getElementById('previewPages'),
-  previewStatus: document.getElementById('previewStatus')
+  previewStatus: document.getElementById('previewStatus'),
+  notesList: document.getElementById('notesList'),
+  noteBubble: document.getElementById('noteBubble'),
+  noteBubbleInput: document.getElementById('noteBubbleInput'),
+  noteBubbleSave: document.getElementById('noteBubbleSave'),
+  noteBubbleCancel: document.getElementById('noteBubbleCancel')
 };
 
 let activeProjectId = '';
 let lastUpdatedAt = '';
 let pollHandle = null;
+let activeNotes = [];
+let pendingSelection = null;
 
 async function fetchJson(url) {
   const res = await fetch(url);
@@ -23,29 +30,144 @@ function formatLine(block) {
   return { type, text };
 }
 
+function loadNotes(projectId) {
+  if (!projectId) return [];
+  try {
+    const raw = localStorage.getItem(`shootPreviewNotes:${projectId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch (err) {
+    console.error('Failed to load notes', err);
+    return [];
+  }
+}
+
+function saveNotes(projectId, notes) {
+  if (!projectId) return;
+  localStorage.setItem(`shootPreviewNotes:${projectId}`, JSON.stringify(notes));
+}
+
+function renderNotesList() {
+  els.notesList.innerHTML = '';
+  if (!activeNotes.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No notes yet.';
+    els.notesList.appendChild(empty);
+    return;
+  }
+  activeNotes.forEach(note => {
+    const card = document.createElement('div');
+    card.className = 'note-card';
+    const excerpt = document.createElement('div');
+    excerpt.className = 'note-excerpt';
+    excerpt.textContent = note.excerpt;
+    const text = document.createElement('div');
+    text.className = 'note-text';
+    text.textContent = note.text;
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.textContent = 'Delete';
+    del.addEventListener('click', () => {
+      activeNotes = activeNotes.filter(item => item.id !== note.id);
+      saveNotes(activeProjectId, activeNotes);
+      renderProject(currentProjectCache);
+    });
+    card.append(excerpt, text, del);
+    els.notesList.appendChild(card);
+  });
+}
+
+function clearNoteBubble() {
+  els.noteBubble.classList.add('hidden');
+  els.noteBubbleInput.value = '';
+  pendingSelection = null;
+}
+
+function showNoteBubble(rect) {
+  if (!rect) return;
+  const containerRect = document.body.getBoundingClientRect();
+  els.noteBubble.style.top = `${rect.top - containerRect.top + window.scrollY}px`;
+  els.noteBubble.classList.remove('hidden');
+  els.noteBubbleInput.focus();
+}
+
+let currentProjectCache = null;
+
 function renderProject(project) {
+  currentProjectCache = project;
   els.previewPages.innerHTML = '';
   if (!project || !project.pages || !project.pages.length) {
     els.previewPages.innerHTML = '<div class="empty">No pages available for this project.</div>';
     return;
   }
-  project.pages.forEach((page, index) => {
-    const pageEl = document.createElement('div');
-    pageEl.className = 'page';
-    const header = document.createElement('div');
-    header.className = 'page-header';
-    header.textContent = `${project.name || 'Untitled Project'} — Page ${index + 1}`;
-    pageEl.appendChild(header);
-    (page.blocks || []).forEach(block => {
+  const pageEl = document.createElement('div');
+  pageEl.className = 'page continuous';
+  const header = document.createElement('div');
+  header.className = 'page-header';
+  header.textContent = `${project.name || 'Untitled Project'} — Live Preview`;
+  pageEl.appendChild(header);
+  const notesByLine = activeNotes.reduce((acc, note) => {
+    const key = `${note.pageIndex}-${note.lineIndex}`;
+    acc[key] = acc[key] || [];
+    acc[key].push(note);
+    return acc;
+  }, {});
+
+  project.pages.forEach((page, pageIndex) => {
+    (page.blocks || []).forEach((block, lineIndex) => {
       const lineData = formatLine(block);
       if (!lineData) return;
       const line = document.createElement('div');
       line.className = `line ${lineData.type}`;
-      line.textContent = lineData.text;
+      line.dataset.pageIndex = String(pageIndex);
+      line.dataset.lineIndex = String(lineIndex);
+      const key = `${pageIndex}-${lineIndex}`;
+      const notes = notesByLine[key] || [];
+      if (notes.length) {
+        let text = lineData.text;
+        notes.forEach(note => {
+          if (note.start < note.end && note.end <= text.length) {
+            const before = text.slice(0, note.start);
+            const mid = text.slice(note.start, note.end);
+            const after = text.slice(note.end);
+            text = `${before}[[HIGHLIGHT-${note.id}]]${mid}[[END-${note.id}]]${after}`;
+          }
+        });
+        const parts = text.split(/(\[\[HIGHLIGHT-[^\]]+\]\]|\[\[END-[^\]]+\]\])/);
+        let currentHighlight = null;
+        parts.forEach(part => {
+          const startMatch = part.match(/^\[\[HIGHLIGHT-(.+)\]\]$/);
+          const endMatch = part.match(/^\[\[END-(.+)\]\]$/);
+          if (startMatch) {
+            currentHighlight = startMatch[1];
+            return;
+          }
+          if (endMatch) {
+            currentHighlight = null;
+            return;
+          }
+          if (!part) return;
+          if (currentHighlight) {
+            const mark = document.createElement('mark');
+            mark.className = 'note-highlight';
+            mark.dataset.noteId = currentHighlight;
+            mark.textContent = part;
+            line.appendChild(mark);
+          } else {
+            line.appendChild(document.createTextNode(part));
+          }
+        });
+      } else {
+        line.textContent = lineData.text;
+      }
       pageEl.appendChild(line);
     });
-    els.previewPages.appendChild(pageEl);
+    const spacer = document.createElement('div');
+    spacer.className = 'line spacer';
+    pageEl.appendChild(spacer);
   });
+  els.previewPages.appendChild(pageEl);
+  renderNotesList();
 }
 
 async function loadProjects() {
@@ -72,10 +194,12 @@ async function refreshProject(force = false) {
   if (!activeProjectId) {
     els.previewStatus.textContent = 'Waiting for selection…';
     els.previewPages.innerHTML = '<div class="empty">Select a project to view the live PDF preview.</div>';
+    els.notesList.innerHTML = '<div class="empty">No notes yet.</div>';
     return;
   }
   const project = await fetchJson(`/api/projects/${activeProjectId}`);
   const updatedAt = project.updatedAt || '';
+  activeNotes = loadNotes(activeProjectId);
   if (!force && updatedAt && updatedAt === lastUpdatedAt) return;
   lastUpdatedAt = updatedAt;
   els.previewStatus.textContent = updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString()}` : 'Live preview';
@@ -96,6 +220,55 @@ els.projectSelect.addEventListener('change', () => {
   activeProjectId = els.projectSelect.value;
   lastUpdatedAt = '';
   refreshProject(true).catch(console.error);
+});
+
+els.previewPages.addEventListener('mouseup', () => {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) {
+    clearNoteBubble();
+    return;
+  }
+  const range = selection.getRangeAt(0);
+  const startLine = range.startContainer.parentElement?.closest('.line');
+  const endLine = range.endContainer.parentElement?.closest('.line');
+  if (!startLine || startLine !== endLine) {
+    clearNoteBubble();
+    return;
+  }
+  const lineText = startLine.textContent || '';
+  const startOffset = range.startOffset;
+  const endOffset = range.endOffset;
+  if (!lineText.trim() || startOffset === endOffset) {
+    clearNoteBubble();
+    return;
+  }
+  pendingSelection = {
+    pageIndex: Number(startLine.dataset.pageIndex),
+    lineIndex: Number(startLine.dataset.lineIndex),
+    start: Math.min(startOffset, endOffset),
+    end: Math.max(startOffset, endOffset),
+    excerpt: lineText.slice(Math.min(startOffset, endOffset), Math.max(startOffset, endOffset)).trim()
+  };
+  showNoteBubble(startLine.getBoundingClientRect());
+});
+
+els.noteBubbleCancel.addEventListener('click', () => {
+  clearNoteBubble();
+});
+
+els.noteBubbleSave.addEventListener('click', () => {
+  if (!pendingSelection || !activeProjectId) return;
+  const text = els.noteBubbleInput.value.trim();
+  if (!text) return;
+  const note = {
+    id: `note-${Date.now()}`,
+    text,
+    ...pendingSelection
+  };
+  activeNotes.push(note);
+  saveNotes(activeProjectId, activeNotes);
+  clearNoteBubble();
+  renderProject(currentProjectCache);
 });
 
 loadProjects()

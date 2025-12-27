@@ -22,6 +22,20 @@
       <div class="preview-pages" id="previewPages">
         <div class="empty">Select a project to view the live PDF preview.</div>
       </div>
+      <aside class="preview-notes" id="previewNotes">
+        <div class="notes-header">Notes</div>
+        <div class="notes-list" id="notesList">
+          <div class="empty">No notes yet.</div>
+        </div>
+      </aside>
+      <div class="note-bubble hidden" id="noteBubble">
+        <div class="note-bubble-title">Add note</div>
+        <textarea id="noteBubbleInput" rows="4" placeholder="Type a note for this highlight..."></textarea>
+        <div class="note-bubble-actions">
+          <button id="noteBubbleSave">Save</button>
+          <button id="noteBubbleCancel" class="ghost">Cancel</button>
+        </div>
+      </div>
     </main>
 
     <script src="preview.js"></script>
