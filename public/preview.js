@@ -175,6 +175,40 @@ function buildLine(lineData, pageIndex, lineIndex, notesByLine) {
   return line;
 }
 
+function getMaxCharsForType(type) {
+  switch (type) {
+    case 'character':
+      return 22;
+    case 'dialogue':
+      return 44;
+    case 'scene':
+      return 58;
+    default:
+      return 64;
+  }
+}
+
+function wrapLineText(type, text) {
+  const maxChars = getMaxCharsForType(type);
+  const words = text.split(/\s+/);
+  const lines = [];
+  let current = '';
+  words.forEach(word => {
+    if (!current.length) {
+      current = word;
+      return;
+    }
+    if ((current.length + 1 + word.length) <= maxChars) {
+      current = `${current} ${word}`;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  });
+  if (current) lines.push(current);
+  return lines.length ? lines : [''];
+}
+
 function renderProject(project) {
   currentProjectCache = project;
   els.previewPages.innerHTML = '';
@@ -254,10 +288,54 @@ function renderProject(project) {
     pageEl.appendChild(footer);
     els.previewPages.appendChild(pageEl);
   } else {
-    const linesPerPage = 38;
+    const linesPerPage = 36;
+    const pages = [];
+    let currentPage = [];
+    let remaining = linesPerPage;
+    allLines.forEach(entry => {
+      if (entry.lineData.type === 'spacer') {
+        if (remaining <= 0) {
+          pages.push(currentPage);
+          currentPage = [];
+          remaining = linesPerPage;
+        }
+        currentPage.push({
+          lineData: entry.lineData,
+          pageIndex: entry.pageIndex,
+          lineIndex: entry.lineIndex,
+          showRowNumber: false
+        });
+        remaining -= 1;
+        return;
+      }
+      const wrapped = wrapLineText(entry.lineData.type, entry.lineData.text);
+      let lineOffset = 0;
+      while (lineOffset < wrapped.length) {
+        if (remaining === 0) {
+          pages.push(currentPage);
+          currentPage = [];
+          remaining = linesPerPage;
+        }
+        const chunkSize = Math.min(remaining, wrapped.length - lineOffset);
+        for (let i = 0; i < chunkSize; i += 1) {
+          const isFirstLine = lineOffset === 0 && i === 0;
+          const continuation = lineOffset > 0 && i === 0;
+          currentPage.push({
+            lineData: { ...entry.lineData, text: wrapped[lineOffset + i] },
+            pageIndex: entry.pageIndex,
+            lineIndex: entry.lineIndex,
+            showRowNumber: isFirstLine || continuation,
+            continuation
+          });
+        }
+        lineOffset += chunkSize;
+        remaining -= chunkSize;
+      }
+    });
+    if (currentPage.length) pages.push(currentPage);
+
     let pageIndex = 0;
-    for (let i = 0; i < allLines.length; i += linesPerPage) {
-      const chunk = allLines.slice(i, i + linesPerPage);
+    pages.forEach(chunk => {
       const pageEl = document.createElement('div');
       pageEl.className = 'page';
       const header = document.createElement('div');
@@ -275,11 +353,10 @@ function renderProject(project) {
           return;
         }
         const line = buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine);
-        if (entry.pageIndex !== lastPageIndex) {
-          lastPageIndex = entry.pageIndex;
+        if (entry.showRowNumber) {
           const rowNumber = document.createElement('span');
           rowNumber.className = 'row-number';
-          rowNumber.textContent = String(entry.pageIndex + 1);
+          rowNumber.textContent = `${entry.pageIndex + 1}${entry.continuation ? '*' : ''}`;
           line.classList.add('with-row');
           line.prepend(rowNumber);
         }
@@ -292,7 +369,7 @@ function renderProject(project) {
       pageEl.appendChild(footer);
       els.previewPages.appendChild(pageEl);
       pageIndex += 1;
-    }
+    });
   }
   renderNotesList();
 }

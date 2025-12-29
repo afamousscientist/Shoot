@@ -209,6 +209,7 @@ body {
 
 .line {
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .line .row-number {
