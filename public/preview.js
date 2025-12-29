@@ -201,6 +201,16 @@ function renderProject(project) {
     els.previewPages.appendChild(titlePage);
   }
 
+  const allLines = [];
+  project.pages.forEach((page, pageIndex) => {
+    (page.blocks || []).forEach((block, lineIndex) => {
+      const lineData = formatLine(block);
+      if (!lineData) return;
+      allLines.push({ lineData, pageIndex, lineIndex });
+    });
+    allLines.push({ lineData: { type: 'spacer', text: '' }, pageIndex, lineIndex: -1 });
+  });
+
   if (previewSettings.view === 'seamless') {
     const pageEl = document.createElement('div');
     pageEl.className = 'page continuous';
@@ -208,40 +218,53 @@ function renderProject(project) {
     header.className = 'page-header';
     header.textContent = headerText;
     pageEl.appendChild(header);
-    project.pages.forEach((page, pageIndex) => {
-      (page.blocks || []).forEach((block, lineIndex) => {
-        const lineData = formatLine(block);
-        if (!lineData) return;
-        pageEl.appendChild(buildLine(lineData, pageIndex, lineIndex, notesByLine));
-      });
-      const spacer = document.createElement('div');
-      spacer.className = 'line spacer';
-      pageEl.appendChild(spacer);
+    const body = document.createElement('div');
+    body.className = 'page-body';
+    allLines.forEach(entry => {
+      if (entry.lineData.type === 'spacer') {
+        const spacer = document.createElement('div');
+        spacer.className = 'line spacer';
+        body.appendChild(spacer);
+        return;
+      }
+      body.appendChild(buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine));
     });
+    pageEl.appendChild(body);
     const footer = document.createElement('div');
     footer.className = 'page-footer';
     footer.innerHTML = `<span>${footerText}</span><span>${headerText}</span>`;
     pageEl.appendChild(footer);
     els.previewPages.appendChild(pageEl);
   } else {
-    project.pages.forEach((page, pageIndex) => {
+    const linesPerPage = 46;
+    let pageIndex = 0;
+    for (let i = 0; i < allLines.length; i += linesPerPage) {
+      const chunk = allLines.slice(i, i + linesPerPage);
       const pageEl = document.createElement('div');
       pageEl.className = 'page';
       const header = document.createElement('div');
       header.className = 'page-header';
       header.textContent = headerText;
       pageEl.appendChild(header);
-      (page.blocks || []).forEach((block, lineIndex) => {
-        const lineData = formatLine(block);
-        if (!lineData) return;
-        pageEl.appendChild(buildLine(lineData, pageIndex, lineIndex, notesByLine));
+      const body = document.createElement('div');
+      body.className = 'page-body';
+      chunk.forEach(entry => {
+        if (entry.lineData.type === 'spacer') {
+          const spacer = document.createElement('div');
+          spacer.className = 'line spacer';
+          body.appendChild(spacer);
+          return;
+        }
+        body.appendChild(buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine));
       });
+      pageEl.appendChild(body);
       const footer = document.createElement('div');
       footer.className = 'page-footer';
       footer.innerHTML = `<span>${footerText}</span><span>${pageIndex + 1}</span>`;
       pageEl.appendChild(footer);
       els.previewPages.appendChild(pageEl);
-    });
+      pageIndex += 1;
+    }
   }
   renderNotesList();
 }
