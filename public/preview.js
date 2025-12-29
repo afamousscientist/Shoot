@@ -178,9 +178,9 @@ function buildLine(lineData, pageIndex, lineIndex, notesByLine) {
 function getMaxCharsForType(type) {
   switch (type) {
     case 'character':
-      return 22;
+      return Infinity;
     case 'dialogue':
-      return 44;
+      return Infinity;
     case 'scene':
       return 58;
     default:
@@ -190,6 +190,9 @@ function getMaxCharsForType(type) {
 
 function wrapLineText(type, text) {
   const maxChars = getMaxCharsForType(type);
+  if (!Number.isFinite(maxChars)) {
+    return [text];
+  }
   const words = text.split(/\s+/);
   const lines = [];
   let current = '';
@@ -363,14 +366,12 @@ function renderProject(project) {
         }
         const isNewPageStart = remainingHeight === bodyHeight;
         const isFirstLine = lineOffset === 0;
-        const continuation = lineOffset > 0 && isNewPageStart;
         const lineText = wrapped[lineOffset];
         currentPage.push({
           lineData: { ...entry.lineData, text: lineText },
           pageIndex: entry.pageIndex,
           lineIndex: entry.lineIndex,
-          showRowNumber: isFirstLine || continuation,
-          continuation
+          showRowNumber: isFirstLine
         });
         lineOffset += 1;
         remainingHeight -= requiredHeight;
@@ -400,7 +401,7 @@ function renderProject(project) {
         if (entry.showRowNumber) {
           const rowNumber = document.createElement('span');
           rowNumber.className = 'row-number';
-          rowNumber.textContent = `${entry.pageIndex + 1}${entry.continuation ? '*' : ''}`;
+          rowNumber.textContent = String(entry.pageIndex + 1);
           line.classList.add('with-row');
           line.prepend(rowNumber);
         }

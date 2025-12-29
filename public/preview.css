@@ -217,8 +217,8 @@ body {
 
 .line .row-number {
   position: absolute;
-  left: -0.8in;
-  width: 0.6in;
+  left: -1in;
+  width: 0.8in;
   text-align: right;
   color: rgba(40, 40, 40, 0.55);
   font-size: 0.8rem;
@@ -239,18 +239,22 @@ body {
 
 .line.action {
   margin-bottom: 12px;
+  margin-left: 0.25in;
 }
 
 .line.character {
-  margin-left: 2.6in;
+  margin-left: auto;
+  margin-right: auto;
   width: 3.2in;
   text-align: center;
   text-transform: uppercase;
 }
 
 .line.dialogue {
-  margin-left: 2.1in;
+  margin-left: auto;
+  margin-right: auto;
   width: 3.8in;
+  text-align: center;
 }
 
 .note-highlight {
