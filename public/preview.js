@@ -209,6 +209,34 @@ function wrapLineText(type, text) {
   return lines.length ? lines : [''];
 }
 
+function measurePagedLayout() {
+  const pageEl = document.createElement('div');
+  pageEl.className = 'page';
+  pageEl.style.position = 'absolute';
+  pageEl.style.visibility = 'hidden';
+  pageEl.style.pointerEvents = 'none';
+  pageEl.style.top = '0';
+  const header = document.createElement('div');
+  header.className = 'page-header';
+  header.textContent = 'Header';
+  const body = document.createElement('div');
+  body.className = 'page-body paged';
+  const line = document.createElement('div');
+  line.className = 'line action';
+  line.textContent = 'Sample line';
+  body.appendChild(line);
+  const footer = document.createElement('div');
+  footer.className = 'page-footer';
+  footer.textContent = 'Footer';
+  pageEl.append(header, body, footer);
+  els.previewPages.appendChild(pageEl);
+  const lineHeight = line.getBoundingClientRect().height || 16;
+  const bodyHeight = body.getBoundingClientRect().height || 0;
+  pageEl.remove();
+  const linesPerPage = Math.max(1, Math.floor(bodyHeight / lineHeight));
+  return { linesPerPage, lineHeight, bodyHeight };
+}
+
 function renderProject(project) {
   currentProjectCache = project;
   els.previewPages.innerHTML = '';
@@ -288,7 +316,7 @@ function renderProject(project) {
     pageEl.appendChild(footer);
     els.previewPages.appendChild(pageEl);
   } else {
-    const linesPerPage = 32;
+    const { linesPerPage } = measurePagedLayout();
     const pages = [];
     let currentPage = [];
     let remaining = linesPerPage;
@@ -316,10 +344,11 @@ function renderProject(project) {
           currentPage = [];
           remaining = linesPerPage;
         }
+        const isNewPageStart = remaining === linesPerPage;
         const chunkSize = Math.min(remaining, wrapped.length - lineOffset);
         for (let i = 0; i < chunkSize; i += 1) {
           const isFirstLine = lineOffset === 0 && i === 0;
-          const continuation = lineOffset > 0 && i === 0;
+          const continuation = lineOffset > 0 && i === 0 && isNewPageStart;
           currentPage.push({
             lineData: { ...entry.lineData, text: wrapped[lineOffset + i] },
             pageIndex: entry.pageIndex,
