@@ -141,9 +141,9 @@ body {
   color: #1b1b1b;
   border-radius: 0;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-  padding: 1in 1in 1in 1.1in;
+  padding: 0.9in 1in 0.9in 1.1in;
   font-family: "Courier New", Courier, monospace;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 .page.continuous {
@@ -158,16 +158,23 @@ body {
 }
 
 .page-footer {
-  margin-top: 32px;
+  margin-top: auto;
+  padding-top: 18px;
   font-size: 0.8rem;
   display: flex;
   justify-content: space-between;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .page-body {
   display: flex;
   flex-direction: column;
   gap: 0;
+  flex: 1;
+}
+
+.page-body.paged {
+  min-height: 7.8in;
 }
 
 .title-page {
@@ -177,6 +184,7 @@ body {
   justify-content: center;
   gap: 18px;
   min-height: 11in;
+  position: relative;
 }
 
 .title-page h1 {
@@ -188,8 +196,32 @@ body {
   font-size: 1rem;
 }
 
+.title-page .watermark {
+  position: absolute;
+  bottom: 1.5in;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(20, 20, 20, 0.35);
+  letter-spacing: 0.08em;
+}
+
 .line {
   white-space: pre-wrap;
+}
+
+.line .row-number {
+  position: absolute;
+  left: -0.8in;
+  width: 0.6in;
+  text-align: right;
+  color: rgba(40, 40, 40, 0.55);
+  font-size: 0.8rem;
+}
+
+.line.with-row {
+  position: relative;
 }
 
 .line.spacer {

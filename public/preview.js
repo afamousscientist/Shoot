@@ -6,6 +6,7 @@ const els = {
   viewPaged: document.getElementById('viewPaged'),
   downloadPreview: document.getElementById('downloadPreview'),
   includeTitlePage: document.getElementById('includeTitlePage'),
+  includeCredit: document.getElementById('includeCredit'),
   headerInput: document.getElementById('headerInput'),
   footerInput: document.getElementById('footerInput'),
   titleInput: document.getElementById('titleInput'),
@@ -25,6 +26,7 @@ let pendingSelection = null;
 let previewSettings = {
   view: 'seamless',
   includeTitlePage: false,
+  includeCredit: false,
   header: '',
   footer: '',
   title: '',
@@ -198,6 +200,12 @@ function renderProject(project) {
     author.className = 'byline';
     author.textContent = previewSettings.author ? `by ${previewSettings.author}` : '';
     titlePage.append(title, author);
+    if (previewSettings.includeCredit) {
+      const watermark = document.createElement('div');
+      watermark.className = 'watermark';
+      watermark.textContent = 'Created in Shoot! Editor';
+      titlePage.appendChild(watermark);
+    }
     els.previewPages.appendChild(titlePage);
   }
 
@@ -220,6 +228,7 @@ function renderProject(project) {
     pageEl.appendChild(header);
     const body = document.createElement('div');
     body.className = 'page-body';
+    let lastPageIndex = -1;
     allLines.forEach(entry => {
       if (entry.lineData.type === 'spacer') {
         const spacer = document.createElement('div');
@@ -227,7 +236,16 @@ function renderProject(project) {
         body.appendChild(spacer);
         return;
       }
-      body.appendChild(buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine));
+      const line = buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine);
+      if (entry.pageIndex !== lastPageIndex) {
+        lastPageIndex = entry.pageIndex;
+        const rowNumber = document.createElement('span');
+        rowNumber.className = 'row-number';
+        rowNumber.textContent = String(entry.pageIndex + 1);
+        line.classList.add('with-row');
+        line.prepend(rowNumber);
+      }
+      body.appendChild(line);
     });
     pageEl.appendChild(body);
     const footer = document.createElement('div');
@@ -236,7 +254,7 @@ function renderProject(project) {
     pageEl.appendChild(footer);
     els.previewPages.appendChild(pageEl);
   } else {
-    const linesPerPage = 46;
+    const linesPerPage = 38;
     let pageIndex = 0;
     for (let i = 0; i < allLines.length; i += linesPerPage) {
       const chunk = allLines.slice(i, i + linesPerPage);
@@ -247,7 +265,8 @@ function renderProject(project) {
       header.textContent = headerText;
       pageEl.appendChild(header);
       const body = document.createElement('div');
-      body.className = 'page-body';
+      body.className = 'page-body paged';
+      let lastPageIndex = -1;
       chunk.forEach(entry => {
         if (entry.lineData.type === 'spacer') {
           const spacer = document.createElement('div');
@@ -255,12 +274,21 @@ function renderProject(project) {
           body.appendChild(spacer);
           return;
         }
-        body.appendChild(buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine));
+        const line = buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine);
+        if (entry.pageIndex !== lastPageIndex) {
+          lastPageIndex = entry.pageIndex;
+          const rowNumber = document.createElement('span');
+          rowNumber.className = 'row-number';
+          rowNumber.textContent = String(entry.pageIndex + 1);
+          line.classList.add('with-row');
+          line.prepend(rowNumber);
+        }
+        body.appendChild(line);
       });
       pageEl.appendChild(body);
       const footer = document.createElement('div');
       footer.className = 'page-footer';
-      footer.innerHTML = `<span>${footerText}</span><span>${pageIndex + 1}</span>`;
+      footer.innerHTML = `<span>${footerText}</span><span>Page ${pageIndex + 1}</span>`;
       pageEl.appendChild(footer);
       els.previewPages.appendChild(pageEl);
       pageIndex += 1;
@@ -301,6 +329,7 @@ async function refreshProject(force = false) {
   activeNotes = loadNotes(activeProjectId);
   previewSettings = loadSettings(activeProjectId);
   els.includeTitlePage.checked = previewSettings.includeTitlePage;
+  els.includeCredit.checked = previewSettings.includeCredit;
   els.headerInput.value = previewSettings.header;
   els.footerInput.value = previewSettings.footer;
   els.titleInput.value = previewSettings.title;
@@ -345,9 +374,10 @@ els.viewPaged.addEventListener('click', () => {
   els.viewSeamless.classList.remove('active');
 });
 
-[els.includeTitlePage, els.headerInput, els.footerInput, els.titleInput, els.authorInput].forEach(input => {
+[els.includeTitlePage, els.includeCredit, els.headerInput, els.footerInput, els.titleInput, els.authorInput].forEach(input => {
   input.addEventListener('input', () => {
     previewSettings.includeTitlePage = els.includeTitlePage.checked;
+    previewSettings.includeCredit = els.includeCredit.checked;
     previewSettings.header = els.headerInput.value;
     previewSettings.footer = els.footerInput.value;
     previewSettings.title = els.titleInput.value;
