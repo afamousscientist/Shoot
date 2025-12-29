@@ -133,6 +133,8 @@ function buildLine(lineData, pageIndex, lineIndex, notesByLine) {
   line.className = `line ${lineData.type}`;
   line.dataset.pageIndex = String(pageIndex);
   line.dataset.lineIndex = String(lineIndex);
+  const content = document.createElement('span');
+  content.className = 'line-text';
   const key = `${pageIndex}-${lineIndex}`;
   const notes = notesByLine[key] || [];
   if (notes.length) {
@@ -164,15 +166,27 @@ function buildLine(lineData, pageIndex, lineIndex, notesByLine) {
         mark.className = 'note-highlight';
         mark.dataset.noteId = currentHighlight;
         mark.textContent = part;
-        line.appendChild(mark);
+        content.appendChild(mark);
       } else {
-        line.appendChild(document.createTextNode(part));
+        content.appendChild(document.createTextNode(part));
       }
     });
   } else {
-    line.textContent = lineData.text;
+    content.textContent = lineData.text;
   }
+  line.appendChild(content);
   return line;
+}
+
+function applyRowNumber(line, text) {
+  const rowNumber = document.createElement('span');
+  rowNumber.className = 'row-number';
+  if (!text) {
+    rowNumber.classList.add('empty');
+  } else {
+    rowNumber.textContent = text;
+  }
+  line.prepend(rowNumber);
 }
 
 function getMaxCharsForType(type) {
@@ -314,18 +328,16 @@ function renderProject(project) {
       if (entry.lineData.type === 'spacer') {
         const spacer = document.createElement('div');
         spacer.className = 'line spacer';
+        applyRowNumber(spacer, '');
         body.appendChild(spacer);
         return;
       }
       const line = buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine);
+      const rowNumberText = entry.pageIndex !== lastPageIndex ? String(entry.pageIndex + 1) : '';
       if (entry.pageIndex !== lastPageIndex) {
         lastPageIndex = entry.pageIndex;
-        const rowNumber = document.createElement('span');
-        rowNumber.className = 'row-number';
-        rowNumber.textContent = String(entry.pageIndex + 1);
-        line.classList.add('with-row');
-        line.prepend(rowNumber);
       }
+      applyRowNumber(line, rowNumberText);
       body.appendChild(line);
     });
     pageEl.appendChild(body);
@@ -394,17 +406,13 @@ function renderProject(project) {
         if (entry.lineData.type === 'spacer') {
           const spacer = document.createElement('div');
           spacer.className = 'line spacer';
+          applyRowNumber(spacer, '');
           body.appendChild(spacer);
           return;
         }
         const line = buildLine(entry.lineData, entry.pageIndex, entry.lineIndex, notesByLine);
-        if (entry.showRowNumber) {
-          const rowNumber = document.createElement('span');
-          rowNumber.className = 'row-number';
-          rowNumber.textContent = String(entry.pageIndex + 1);
-          line.classList.add('with-row');
-          line.prepend(rowNumber);
-        }
+        const rowNumberText = entry.showRowNumber ? String(entry.pageIndex + 1) : '';
+        applyRowNumber(line, rowNumberText);
         body.appendChild(line);
       });
       pageEl.appendChild(body);
