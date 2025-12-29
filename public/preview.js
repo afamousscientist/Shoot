@@ -288,7 +288,7 @@ function renderProject(project) {
     pageEl.appendChild(footer);
     els.previewPages.appendChild(pageEl);
   } else {
-    const linesPerPage = 36;
+    const linesPerPage = 32;
     const pages = [];
     let currentPage = [];
     let remaining = linesPerPage;

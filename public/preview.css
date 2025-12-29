@@ -141,9 +141,9 @@ body {
   color: #1b1b1b;
   border-radius: 0;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-  padding: 0.9in 1in 0.9in 1.1in;
+  padding: 1in 1in 1in 1.1in;
   font-family: "Courier New", Courier, monospace;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .page.continuous {
@@ -174,7 +174,7 @@ body {
 }
 
 .page-body.paged {
-  min-height: 7.8in;
+  min-height: 7.4in;
 }
 
 .title-page {
