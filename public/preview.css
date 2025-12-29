@@ -134,6 +134,8 @@ body {
 .page {
   width: min(8.5in, 90vw);
   min-height: 11in;
+  aspect-ratio: 8.5 / 11;
+  height: auto;
   margin: 0 auto;
   background: #ffffff;
   color: #1b1b1b;
