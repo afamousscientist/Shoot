@@ -217,6 +217,8 @@ function measurePagedLayout() {
   pageEl.style.pointerEvents = 'none';
   pageEl.style.top = '0';
   pageEl.style.left = '0';
+  pageEl.style.width = '8.5in';
+  pageEl.style.height = '11in';
   const header = document.createElement('div');
   header.className = 'page-header';
   header.textContent = 'Header';

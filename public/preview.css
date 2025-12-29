@@ -141,7 +141,7 @@ body {
   color: #1b1b1b;
   border-radius: 0;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-  padding: 1in 1in 1in 1.1in;
+  padding: 1.1in 1in 1.1in 1.1in;
   font-family: "Courier New", Courier, monospace;
   line-height: 1.35;
   display: flex;
@@ -156,7 +156,7 @@ body {
 .page-header {
   text-align: center;
   font-size: 0.85rem;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .page-footer {
@@ -173,6 +173,7 @@ body {
   flex-direction: column;
   gap: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .page-body.paged {
