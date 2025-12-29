@@ -216,6 +216,7 @@ function measurePagedLayout() {
   pageEl.style.visibility = 'hidden';
   pageEl.style.pointerEvents = 'none';
   pageEl.style.top = '0';
+  pageEl.style.left = '0';
   const header = document.createElement('div');
   header.className = 'page-header';
   header.textContent = 'Header';
@@ -224,17 +225,30 @@ function measurePagedLayout() {
   const line = document.createElement('div');
   line.className = 'line action';
   line.textContent = 'Sample line';
+  const spacer = document.createElement('div');
+  spacer.className = 'line spacer';
   body.appendChild(line);
+  body.appendChild(spacer);
   const footer = document.createElement('div');
   footer.className = 'page-footer';
   footer.textContent = 'Footer';
   pageEl.append(header, body, footer);
   els.previewPages.appendChild(pageEl);
+  const pageRect = pageEl.getBoundingClientRect();
+  const headerRect = header.getBoundingClientRect();
+  const footerRect = footer.getBoundingClientRect();
   const lineHeight = line.getBoundingClientRect().height || 16;
-  const bodyHeight = body.getBoundingClientRect().height || 0;
+  const spacerHeight = spacer.getBoundingClientRect().height || lineHeight;
+  const styles = window.getComputedStyle(pageEl);
+  const paddingTop = parseFloat(styles.paddingTop) || 0;
+  const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+  const bodyHeight = pageRect.height - paddingTop - paddingBottom - headerRect.height - footerRect.height;
   pageEl.remove();
-  const linesPerPage = Math.max(1, Math.floor(bodyHeight / lineHeight));
-  return { linesPerPage, lineHeight, bodyHeight };
+  return {
+    bodyHeight: Math.max(0, bodyHeight),
+    lineHeight,
+    spacerHeight
+  };
 }
 
 function renderProject(project) {
@@ -316,16 +330,16 @@ function renderProject(project) {
     pageEl.appendChild(footer);
     els.previewPages.appendChild(pageEl);
   } else {
-    const { linesPerPage } = measurePagedLayout();
+    const { bodyHeight, lineHeight, spacerHeight } = measurePagedLayout();
     const pages = [];
     let currentPage = [];
-    let remaining = linesPerPage;
+    let remainingHeight = bodyHeight;
     allLines.forEach(entry => {
       if (entry.lineData.type === 'spacer') {
-        if (remaining <= 0) {
+        if (remainingHeight - spacerHeight < 0) {
           pages.push(currentPage);
           currentPage = [];
-          remaining = linesPerPage;
+          remainingHeight = bodyHeight;
         }
         currentPage.push({
           lineData: entry.lineData,
@@ -333,32 +347,31 @@ function renderProject(project) {
           lineIndex: entry.lineIndex,
           showRowNumber: false
         });
-        remaining -= 1;
+        remainingHeight -= spacerHeight;
         return;
       }
       const wrapped = wrapLineText(entry.lineData.type, entry.lineData.text);
       let lineOffset = 0;
       while (lineOffset < wrapped.length) {
-        if (remaining === 0) {
+        const requiredHeight = lineHeight;
+        if (remainingHeight - requiredHeight < 0) {
           pages.push(currentPage);
           currentPage = [];
-          remaining = linesPerPage;
+          remainingHeight = bodyHeight;
         }
-        const isNewPageStart = remaining === linesPerPage;
-        const chunkSize = Math.min(remaining, wrapped.length - lineOffset);
-        for (let i = 0; i < chunkSize; i += 1) {
-          const isFirstLine = lineOffset === 0 && i === 0;
-          const continuation = lineOffset > 0 && i === 0 && isNewPageStart;
-          currentPage.push({
-            lineData: { ...entry.lineData, text: wrapped[lineOffset + i] },
-            pageIndex: entry.pageIndex,
-            lineIndex: entry.lineIndex,
-            showRowNumber: isFirstLine || continuation,
-            continuation
-          });
-        }
-        lineOffset += chunkSize;
-        remaining -= chunkSize;
+        const isNewPageStart = remainingHeight === bodyHeight;
+        const isFirstLine = lineOffset === 0;
+        const continuation = lineOffset > 0 && isNewPageStart;
+        const lineText = wrapped[lineOffset];
+        currentPage.push({
+          lineData: { ...entry.lineData, text: lineText },
+          pageIndex: entry.pageIndex,
+          lineIndex: entry.lineIndex,
+          showRowNumber: isFirstLine || continuation,
+          continuation
+        });
+        lineOffset += 1;
+        remainingHeight -= requiredHeight;
       }
     });
     if (currentPage.length) pages.push(currentPage);

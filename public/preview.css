@@ -144,6 +144,8 @@ body {
   padding: 1in 1in 1in 1.1in;
   font-family: "Courier New", Courier, monospace;
   line-height: 1.35;
+  display: flex;
+  flex-direction: column;
 }
 
 .page.continuous {
@@ -158,7 +160,7 @@ body {
 }
 
 .page-footer {
-  margin-top: auto;
+  margin-top: 18px;
   padding-top: 18px;
   font-size: 0.8rem;
   display: flex;
@@ -174,7 +176,7 @@ body {
 }
 
 .page-body.paged {
-  min-height: 7.4in;
+  min-height: 0;
 }
 
 .title-page {
