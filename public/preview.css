@@ -40,6 +40,37 @@ body {
   flex-wrap: wrap;
 }
 
+.preview-toggle {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.toggle-button {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(10, 20, 40, 0.55);
+  color: #f1f7ff;
+}
+
+.toggle-button.active {
+  background: rgba(120, 180, 245, 0.45);
+}
+
+.preview-controls button {
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(10, 20, 40, 0.55);
+  color: #f1f7ff;
+}
+
+.preview-controls label.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
 .preview-controls label {
   display: flex;
   flex-direction: column;
@@ -52,6 +83,14 @@ body {
 
 .preview-controls select {
   min-width: 220px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(10, 20, 40, 0.55);
+  color: #f1f7ff;
+}
+
+.preview-controls input[type="text"] {
   padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -114,6 +153,31 @@ body {
   text-align: center;
   font-size: 0.85rem;
   margin-bottom: 24px;
+}
+
+.page-footer {
+  margin-top: 32px;
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.title-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 11in;
+}
+
+.title-page h1 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.title-page .byline {
+  font-size: 1rem;
 }
 
 .line {
@@ -264,5 +328,29 @@ body {
 
   .note-bubble {
     right: 20px;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .preview-header,
+  .preview-notes,
+  .note-bubble {
+    display: none !important;
+  }
+  .preview-main {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+  .preview-pages {
+    overflow: visible;
+  }
+  .page {
+    box-shadow: none;
+    border: none;
+    margin: 0 auto 20px;
   }
 }

@@ -2,6 +2,14 @@ const els = {
   projectSelect: document.getElementById('previewProjectSelect'),
   previewPages: document.getElementById('previewPages'),
   previewStatus: document.getElementById('previewStatus'),
+  viewSeamless: document.getElementById('viewSeamless'),
+  viewPaged: document.getElementById('viewPaged'),
+  downloadPreview: document.getElementById('downloadPreview'),
+  includeTitlePage: document.getElementById('includeTitlePage'),
+  headerInput: document.getElementById('headerInput'),
+  footerInput: document.getElementById('footerInput'),
+  titleInput: document.getElementById('titleInput'),
+  authorInput: document.getElementById('authorInput'),
   notesList: document.getElementById('notesList'),
   noteBubble: document.getElementById('noteBubble'),
   noteBubbleInput: document.getElementById('noteBubbleInput'),
@@ -14,6 +22,14 @@ let lastUpdatedAt = '';
 let pollHandle = null;
 let activeNotes = [];
 let pendingSelection = null;
+let previewSettings = {
+  view: 'seamless',
+  includeTitlePage: false,
+  header: '',
+  footer: '',
+  title: '',
+  author: ''
+};
 
 async function fetchJson(url) {
   const res = await fetch(url);
@@ -44,6 +60,23 @@ function loadNotes(projectId) {
 function saveNotes(projectId, notes) {
   if (!projectId) return;
   localStorage.setItem(`shootPreviewNotes:${projectId}`, JSON.stringify(notes));
+}
+
+function loadSettings(projectId) {
+  if (!projectId) return { ...previewSettings };
+  try {
+    const raw = localStorage.getItem(`shootPreviewSettings:${projectId}`);
+    if (!raw) return { ...previewSettings };
+    return { ...previewSettings, ...JSON.parse(raw) };
+  } catch (err) {
+    console.error('Failed to load settings', err);
+    return { ...previewSettings };
+  }
+}
+
+function saveSettings(projectId) {
+  if (!projectId) return;
+  localStorage.setItem(`shootPreviewSettings:${projectId}`, JSON.stringify(previewSettings));
 }
 
 function renderNotesList() {
@@ -93,6 +126,53 @@ function showNoteBubble(rect) {
 
 let currentProjectCache = null;
 
+function buildLine(lineData, pageIndex, lineIndex, notesByLine) {
+  const line = document.createElement('div');
+  line.className = `line ${lineData.type}`;
+  line.dataset.pageIndex = String(pageIndex);
+  line.dataset.lineIndex = String(lineIndex);
+  const key = `${pageIndex}-${lineIndex}`;
+  const notes = notesByLine[key] || [];
+  if (notes.length) {
+    let text = lineData.text;
+    notes.forEach(note => {
+      if (note.start < note.end && note.end <= text.length) {
+        const before = text.slice(0, note.start);
+        const mid = text.slice(note.start, note.end);
+        const after = text.slice(note.end);
+        text = `${before}[[HIGHLIGHT-${note.id}]]${mid}[[END-${note.id}]]${after}`;
+      }
+    });
+    const parts = text.split(/(\[\[HIGHLIGHT-[^\]]+\]\]|\[\[END-[^\]]+\]\])/);
+    let currentHighlight = null;
+    parts.forEach(part => {
+      const startMatch = part.match(/^\[\[HIGHLIGHT-(.+)\]\]$/);
+      const endMatch = part.match(/^\[\[END-(.+)\]\]$/);
+      if (startMatch) {
+        currentHighlight = startMatch[1];
+        return;
+      }
+      if (endMatch) {
+        currentHighlight = null;
+        return;
+      }
+      if (!part) return;
+      if (currentHighlight) {
+        const mark = document.createElement('mark');
+        mark.className = 'note-highlight';
+        mark.dataset.noteId = currentHighlight;
+        mark.textContent = part;
+        line.appendChild(mark);
+      } else {
+        line.appendChild(document.createTextNode(part));
+      }
+    });
+  } else {
+    line.textContent = lineData.text;
+  }
+  return line;
+}
+
 function renderProject(project) {
   currentProjectCache = project;
   els.previewPages.innerHTML = '';
@@ -100,73 +180,69 @@ function renderProject(project) {
     els.previewPages.innerHTML = '<div class="empty">No pages available for this project.</div>';
     return;
   }
-  const pageEl = document.createElement('div');
-  pageEl.className = 'page continuous';
-  const header = document.createElement('div');
-  header.className = 'page-header';
-  header.textContent = `${project.name || 'Untitled Project'} — Live Preview`;
-  pageEl.appendChild(header);
   const notesByLine = activeNotes.reduce((acc, note) => {
     const key = `${note.pageIndex}-${note.lineIndex}`;
     acc[key] = acc[key] || [];
     acc[key].push(note);
     return acc;
   }, {});
+  const headerText = previewSettings.header || project.name || 'Untitled Project';
+  const footerText = previewSettings.footer || '';
 
-  project.pages.forEach((page, pageIndex) => {
-    (page.blocks || []).forEach((block, lineIndex) => {
-      const lineData = formatLine(block);
-      if (!lineData) return;
-      const line = document.createElement('div');
-      line.className = `line ${lineData.type}`;
-      line.dataset.pageIndex = String(pageIndex);
-      line.dataset.lineIndex = String(lineIndex);
-      const key = `${pageIndex}-${lineIndex}`;
-      const notes = notesByLine[key] || [];
-      if (notes.length) {
-        let text = lineData.text;
-        notes.forEach(note => {
-          if (note.start < note.end && note.end <= text.length) {
-            const before = text.slice(0, note.start);
-            const mid = text.slice(note.start, note.end);
-            const after = text.slice(note.end);
-            text = `${before}[[HIGHLIGHT-${note.id}]]${mid}[[END-${note.id}]]${after}`;
-          }
-        });
-        const parts = text.split(/(\[\[HIGHLIGHT-[^\]]+\]\]|\[\[END-[^\]]+\]\])/);
-        let currentHighlight = null;
-        parts.forEach(part => {
-          const startMatch = part.match(/^\[\[HIGHLIGHT-(.+)\]\]$/);
-          const endMatch = part.match(/^\[\[END-(.+)\]\]$/);
-          if (startMatch) {
-            currentHighlight = startMatch[1];
-            return;
-          }
-          if (endMatch) {
-            currentHighlight = null;
-            return;
-          }
-          if (!part) return;
-          if (currentHighlight) {
-            const mark = document.createElement('mark');
-            mark.className = 'note-highlight';
-            mark.dataset.noteId = currentHighlight;
-            mark.textContent = part;
-            line.appendChild(mark);
-          } else {
-            line.appendChild(document.createTextNode(part));
-          }
-        });
-      } else {
-        line.textContent = lineData.text;
-      }
-      pageEl.appendChild(line);
+  if (previewSettings.includeTitlePage) {
+    const titlePage = document.createElement('div');
+    titlePage.className = 'page title-page';
+    const title = document.createElement('h1');
+    title.textContent = previewSettings.title || project.name || 'Untitled Project';
+    const author = document.createElement('div');
+    author.className = 'byline';
+    author.textContent = previewSettings.author ? `by ${previewSettings.author}` : '';
+    titlePage.append(title, author);
+    els.previewPages.appendChild(titlePage);
+  }
+
+  if (previewSettings.view === 'seamless') {
+    const pageEl = document.createElement('div');
+    pageEl.className = 'page continuous';
+    const header = document.createElement('div');
+    header.className = 'page-header';
+    header.textContent = headerText;
+    pageEl.appendChild(header);
+    project.pages.forEach((page, pageIndex) => {
+      (page.blocks || []).forEach((block, lineIndex) => {
+        const lineData = formatLine(block);
+        if (!lineData) return;
+        pageEl.appendChild(buildLine(lineData, pageIndex, lineIndex, notesByLine));
+      });
+      const spacer = document.createElement('div');
+      spacer.className = 'line spacer';
+      pageEl.appendChild(spacer);
     });
-    const spacer = document.createElement('div');
-    spacer.className = 'line spacer';
-    pageEl.appendChild(spacer);
-  });
-  els.previewPages.appendChild(pageEl);
+    const footer = document.createElement('div');
+    footer.className = 'page-footer';
+    footer.innerHTML = `<span>${footerText}</span><span>${headerText}</span>`;
+    pageEl.appendChild(footer);
+    els.previewPages.appendChild(pageEl);
+  } else {
+    project.pages.forEach((page, pageIndex) => {
+      const pageEl = document.createElement('div');
+      pageEl.className = 'page';
+      const header = document.createElement('div');
+      header.className = 'page-header';
+      header.textContent = headerText;
+      pageEl.appendChild(header);
+      (page.blocks || []).forEach((block, lineIndex) => {
+        const lineData = formatLine(block);
+        if (!lineData) return;
+        pageEl.appendChild(buildLine(lineData, pageIndex, lineIndex, notesByLine));
+      });
+      const footer = document.createElement('div');
+      footer.className = 'page-footer';
+      footer.innerHTML = `<span>${footerText}</span><span>${pageIndex + 1}</span>`;
+      pageEl.appendChild(footer);
+      els.previewPages.appendChild(pageEl);
+    });
+  }
   renderNotesList();
 }
 
@@ -200,6 +276,14 @@ async function refreshProject(force = false) {
   const project = await fetchJson(`/api/projects/${activeProjectId}`);
   const updatedAt = project.updatedAt || '';
   activeNotes = loadNotes(activeProjectId);
+  previewSettings = loadSettings(activeProjectId);
+  els.includeTitlePage.checked = previewSettings.includeTitlePage;
+  els.headerInput.value = previewSettings.header;
+  els.footerInput.value = previewSettings.footer;
+  els.titleInput.value = previewSettings.title;
+  els.authorInput.value = previewSettings.author;
+  els.viewSeamless.classList.toggle('active', previewSettings.view === 'seamless');
+  els.viewPaged.classList.toggle('active', previewSettings.view === 'paged');
   if (!force && updatedAt && updatedAt === lastUpdatedAt) return;
   lastUpdatedAt = updatedAt;
   els.previewStatus.textContent = updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString()}` : 'Live preview';
@@ -220,6 +304,38 @@ els.projectSelect.addEventListener('change', () => {
   activeProjectId = els.projectSelect.value;
   lastUpdatedAt = '';
   refreshProject(true).catch(console.error);
+});
+
+els.viewSeamless.addEventListener('click', () => {
+  previewSettings.view = 'seamless';
+  saveSettings(activeProjectId);
+  renderProject(currentProjectCache);
+  els.viewSeamless.classList.add('active');
+  els.viewPaged.classList.remove('active');
+});
+
+els.viewPaged.addEventListener('click', () => {
+  previewSettings.view = 'paged';
+  saveSettings(activeProjectId);
+  renderProject(currentProjectCache);
+  els.viewPaged.classList.add('active');
+  els.viewSeamless.classList.remove('active');
+});
+
+[els.includeTitlePage, els.headerInput, els.footerInput, els.titleInput, els.authorInput].forEach(input => {
+  input.addEventListener('input', () => {
+    previewSettings.includeTitlePage = els.includeTitlePage.checked;
+    previewSettings.header = els.headerInput.value;
+    previewSettings.footer = els.footerInput.value;
+    previewSettings.title = els.titleInput.value;
+    previewSettings.author = els.authorInput.value;
+    saveSettings(activeProjectId);
+    renderProject(currentProjectCache);
+  });
+});
+
+els.downloadPreview.addEventListener('click', () => {
+  window.print();
 });
 
 els.previewPages.addEventListener('mouseup', () => {

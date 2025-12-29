@@ -14,6 +14,31 @@
           Project
           <select id="previewProjectSelect"></select>
         </label>
+        <div class="preview-toggle">
+          <button id="viewSeamless" class="toggle-button active" type="button">Seamless</button>
+          <button id="viewPaged" class="toggle-button" type="button">Pages</button>
+        </div>
+        <button id="downloadPreview" type="button">Download PDF</button>
+        <label class="inline">
+          <input type="checkbox" id="includeTitlePage" />
+          Title page
+        </label>
+        <label>
+          Header
+          <input id="headerInput" type="text" placeholder="Project Title" />
+        </label>
+        <label>
+          Footer
+          <input id="footerInput" type="text" placeholder="Draft info" />
+        </label>
+        <label>
+          Title
+          <input id="titleInput" type="text" placeholder="Script Title" />
+        </label>
+        <label>
+          Author
+          <input id="authorInput" type="text" placeholder="Written by" />
+        </label>
         <div class="preview-status" id="previewStatus">Waiting for selection…</div>
       </div>
     </header>
