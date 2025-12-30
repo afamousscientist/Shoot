@@ -42,8 +42,9 @@ async function fetchJson(url) {
 function formatLine(block) {
   const raw = (block.text || '').trimEnd();
   if (!raw) return null;
-  const type = block.type || 'action';
   const cont = /\bCONT\./i.test(raw);
+  if (cont) return null;
+  const type = block.type || 'action';
   const text = (type === 'scene' || type === 'character') ? raw.toUpperCase() : raw;
   return { type, text, cont };
 }
@@ -376,14 +377,13 @@ function renderProject(project) {
           currentPage = [];
           remainingHeight = bodyHeight;
         }
-        const isNewPageStart = remainingHeight === bodyHeight;
         const isFirstLine = lineOffset === 0;
         const lineText = wrapped[lineOffset];
         currentPage.push({
           lineData: { ...entry.lineData, text: lineText },
           pageIndex: entry.pageIndex,
           lineIndex: entry.lineIndex,
-          showRowNumber: isFirstLine || (entry.lineData.cont && isNewPageStart)
+          showRowNumber: isFirstLine
         });
         lineOffset += 1;
         remainingHeight -= requiredHeight;
