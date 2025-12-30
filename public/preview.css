@@ -173,7 +173,8 @@ body {
   flex-direction: column;
   gap: 0;
   flex: 1;
-  overflow: hidden;
+  overflow-x: visible;
+  overflow-y: hidden;
 }
 
 .page-body.paged {
@@ -213,20 +214,16 @@ body {
 .line {
   white-space: pre-wrap;
   word-break: break-word;
-  display: grid;
-  grid-template-columns: 0.45in 1fr;
-  column-gap: 0.08in;
-  align-items: start;
+  position: relative;
 }
 
-.line .row-number {
+.line.with-row .row-number {
+  position: absolute;
+  left: -0.85in;
+  width: 0.6in;
   text-align: right;
   color: rgba(40, 40, 40, 0.55);
   font-size: 0.8rem;
-}
-
-.line .row-number.empty {
-  visibility: hidden;
 }
 
 .line .line-text {

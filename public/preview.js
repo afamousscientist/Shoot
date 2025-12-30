@@ -180,13 +180,11 @@ function buildLine(lineData, pageIndex, lineIndex, notesByLine) {
 }
 
 function applyRowNumber(line, text) {
+  if (!text) return;
   const rowNumber = document.createElement('span');
   rowNumber.className = 'row-number';
-  if (!text) {
-    rowNumber.classList.add('empty');
-  } else {
-    rowNumber.textContent = text;
-  }
+  rowNumber.textContent = text;
+  line.classList.add('with-row');
   line.prepend(rowNumber);
 }
 
@@ -329,7 +327,6 @@ function renderProject(project) {
       if (entry.lineData.type === 'spacer') {
         const spacer = document.createElement('div');
         spacer.className = 'line spacer';
-        applyRowNumber(spacer, '');
         body.appendChild(spacer);
         return;
       }
@@ -406,7 +403,6 @@ function renderProject(project) {
         if (entry.lineData.type === 'spacer') {
           const spacer = document.createElement('div');
           spacer.className = 'line spacer';
-          applyRowNumber(spacer, '');
           body.appendChild(spacer);
           return;
         }
