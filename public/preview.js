@@ -42,10 +42,10 @@ async function fetchJson(url) {
 function formatLine(block) {
   const raw = (block.text || '').trimEnd();
   if (!raw) return null;
-  if (/\bCONT\./i.test(raw)) return null;
   const type = block.type || 'action';
+  const cont = /\bCONT\./i.test(raw);
   const text = (type === 'scene' || type === 'character') ? raw.toUpperCase() : raw;
-  return { type, text };
+  return { type, text, cont };
 }
 
 function loadNotes(projectId) {
@@ -383,7 +383,7 @@ function renderProject(project) {
           lineData: { ...entry.lineData, text: lineText },
           pageIndex: entry.pageIndex,
           lineIndex: entry.lineIndex,
-          showRowNumber: isFirstLine
+          showRowNumber: isFirstLine || (entry.lineData.cont && isNewPageStart)
         });
         lineOffset += 1;
         remainingHeight -= requiredHeight;

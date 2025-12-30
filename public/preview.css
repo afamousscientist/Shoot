@@ -214,8 +214,8 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   display: grid;
-  grid-template-columns: 0.8in 1fr;
-  column-gap: 0.1in;
+  grid-template-columns: 0.45in 1fr;
+  column-gap: 0.08in;
   align-items: start;
 }
 
