@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shoot! Live Preview</title>
+    <link rel="stylesheet" href="preview.css" />
+  </head>
+  <body>
+    <header class="preview-header">
+      <div class="preview-brand">Shoot! Live PDF Preview</div>
+      <div class="preview-controls">
+        <label>
+          Project
+          <select id="previewProjectSelect"></select>
+        </label>
+        <div class="preview-toggle">
+          <button id="viewSeamless" class="toggle-button active" type="button">Seamless</button>
+          <button id="viewPaged" class="toggle-button" type="button">Pages</button>
+        </div>
+        <button id="downloadPreview" type="button">Download PDF</button>
+        <label class="inline">
+          <input type="checkbox" id="includeTitlePage" />
+          Title page
+        </label>
+        <label class="inline">
+          <input type="checkbox" id="includeCredit" />
+          Credit Shoot!
+        </label>
+        <label>
+          Header
+          <input id="headerInput" type="text" placeholder="Project Title" />
+        </label>
+        <label>
+          Footer
+          <input id="footerInput" type="text" placeholder="Draft info" />
+        </label>
+        <label>
+          Title
+          <input id="titleInput" type="text" placeholder="Script Title" />
+        </label>
+        <label>
+          Author
+          <input id="authorInput" type="text" placeholder="Written by" />
+        </label>
+        <div class="preview-status" id="previewStatus">Waiting for selection…</div>
+      </div>
+    </header>
+
+    <main class="preview-main">
+      <div class="preview-pages" id="previewPages">
+        <div class="empty">Select a project to view the live PDF preview.</div>
+      </div>
+      <aside class="preview-notes" id="previewNotes">
+        <div class="notes-header">Notes</div>
+        <div class="notes-list" id="notesList">
+          <div class="empty">No notes yet.</div>
+        </div>
+      </aside>
+      <div class="note-bubble hidden" id="noteBubble">
+        <div class="note-bubble-title">Add note</div>
+        <textarea id="noteBubbleInput" rows="4" placeholder="Type a note for this highlight..."></textarea>
+        <div class="note-bubble-actions">
+          <button id="noteBubbleSave">Save</button>
+          <button id="noteBubbleCancel" class="ghost">Cancel</button>
+        </div>
+      </div>
+    </main>
+
+    <script src="preview.js"></script>
+  </body>
+</html>

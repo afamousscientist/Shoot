@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shoot!</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="icons/overrides.css" />
+</head>
+  <body>
+    <header class="app-header">
+      <div class="brand" id="brandHome" role="button" tabindex="0" aria-label="Back to lobby">
+        <div class="glyph" role="presentation" aria-hidden="true"></div>
+        <div class="brand-wordmark">
+          <span class="brand-text">Shoot!</span>
+          <span class="brand-subtext">by goblinStudio</span>
+        </div>
+      </div>
+      <div class="header-project" id="headerProject">
+        <div class="header-project-labels">
+          <span class="label">Project</span>
+          <span class="header-project-title" id="headerProjectTitle">No project loaded</span>
+        </div>
+        <div class="header-project-timing">
+          <label class="timing-field">Goal time
+            <input id="goalTimeInput" type="text" inputmode="numeric" placeholder="3:00" />
+          </label>
+          <div class="timing-total" id="totalTimeDisplay" aria-live="polite">Total: 0</div>
+        </div>
+        <div class="header-actions inline">
+          <button id="openDrafts" class="icon-button icon-only with-icon" data-icon="pdf" title="PDF drafts" aria-label="Open PDF drafts"></button>
+          <button id="renameProject" class="icon-button icon-only with-icon" data-icon="rename" title="Rename project" aria-label="Rename project"></button>
+          <button id="orientationToggle" class="icon-button icon-only with-icon" data-icon="orientation" title="Switch layout" aria-label="Switch layout"></button>
+          <button id="saveProject" class="icon-button icon-only with-icon" data-icon="save" title="Save project" aria-label="Save project"></button>
+        </div>
+      </div>
+      <div class="profile" id="profileBar">
+        <div class="profile-name" id="profileName">Guest</div>
+        <button id="profileSave" class="ghost with-icon" data-icon="profile">Remember Profile</button>
+      </div>
+    </header>
+
+  <main>
+    <section id="lobby" class="panel">
+      <div class="lobby-header">
+        <h1>Welcome back</h1>
+        <div class="actions">
+          <button id="newProject" class="icon-button icon-only with-icon" data-icon="new" title="New project" aria-label="New project"></button>
+          <div class="open-area">
+            <select id="openProjectSelect"></select>
+            <button id="openProject" class="icon-button icon-only with-icon" data-icon="open" title="Open project" aria-label="Open project"></button>
+          </div>
+        </div>
+      </div>
+      <div class="recent-list" id="recentList">
+        <p class="muted">Loading recent projects…</p>
+      </div>
+      <footer class="lobby-footer">
+        <div class="meta with-icon" data-icon="page">Network-ready workspace server</div>
+        <button id="settingsButton" class="icon-button with-icon" data-icon="settings" title="Settings">Settings</button>
+      </footer>
+    </section>
+
+    <section id="workspace" class="panel hidden">
+      <div id="layout" class="layout horizontal">
+        <aside class="rundown" id="rundownPanel">
+          <div class="panel-header">
+            <div class="with-icon" data-icon="page">Pages</div>
+            <button id="addPage" class="icon-button icon-only with-icon" data-icon="new" title="Add page" aria-label="Add page"></button>
+          </div>
+          <table class="page-table" id="pageTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Synopsis</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </aside>
+
+        <section class="editor" id="editorPanel">
+          <div class="panel-header">
+            <div class="with-icon" data-icon="page">Script Editor</div>
+            <div class="muted">Double-click a page to load it, then type</div>
+          </div>
+          <div class="script-controls">
+            <div class="script-meta" id="editorMeta">No page loaded</div>
+            <div class="line-type-chips">
+              <button class="chip" data-line-type="scene">Scene</button>
+              <button class="chip" data-line-type="action">Action</button>
+              <button class="chip" data-line-type="character">Character</button>
+              <button class="chip" data-line-type="dialogue">Dialogue</button>
+            </div>
+          </div>
+          <div class="script-editor-shell">
+            <div
+              id="scriptEditor"
+              class="script-editor"
+              aria-label="Screenplay text editor"
+              contenteditable="true"
+              spellcheck="false"
+            ></div>
+          </div>
+        </section>
+
+        <section class="builder-panel" id="objectBuilder">
+          <div class="panel-header tight">
+            <div class="with-icon" data-icon="note">Object builder</div>
+            <div class="muted small">Create director + script instructions</div>
+          </div>
+          <div class="builder-grid">
+            <label>Title
+              <input id="noteTitle" type="text" placeholder="Camera move" />
+            </label>
+            <label>Accent color
+              <input id="noteColor" type="color" value="#2b8cff" />
+            </label>
+            <label>Note text
+              <textarea id="noteBody" rows="3" placeholder="Push in on hero, hold for reaction"></textarea>
+            </label>
+          </div>
+          <div class="builder-preview">
+            <div class="muted small">Preview (drag into Director box)</div>
+            <div id="notePreview" class="note-card draggable" draggable="true" aria-label="Note preview"></div>
+          </div>
+          <div class="builder-actions">
+            <button id="addNoteObject" class="with-icon" data-icon="add">Save to toolkit</button>
+            <span id="noteModeStatus" class="muted small hidden"></span>
+            <div class="muted small">Toolkit items can be dragged into any page's director box.</div>
+          </div>
+          <div id="noteLibrary" class="note-library"></div>
+        </section>
+
+        <section class="director-panel" id="directorPanel">
+          <div class="panel-header">
+            <div class="with-icon" data-icon="note">Director notes</div>
+            <div class="muted small">Drag objects here — saved separately from the script</div>
+          </div>
+          <div id="directorBox" class="director-box" aria-label="Director notes drop zone" tabindex="0"></div>
+        </section>
+      </div>
+
+      <div id="toolShelf" class="toolbar">
+        <button id="collapseToolbar" class="ghost">Hide tools</button>
+        <div class="tool-items">
+          <label><input type="checkbox" data-plugin="breakdownHelper" checked /> Breakdown helper</label>
+          <label><input type="checkbox" data-plugin="revisionTracker" checked /> Revision tracker</label>
+          <label><input type="checkbox" data-plugin="referenceLinks" /> Reference links</label>
+        </div>
+      </div>
+    </section>
+
+    <section id="settings" class="panel hidden">
+      <h2>Profile Settings</h2>
+      <label>Display name
+        <input id="profileInput" type="text" />
+      </label>
+      <div class="muted small">Settings are saved to your profile and follow you across the network.</div>
+      <div class="settings-actions">
+        <button id="saveSettings">Save Settings</button>
+        <button id="closeSettings" class="ghost">Close</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="draftModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="draftModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <div id="draftModalTitle" class="with-icon" data-icon="pdf">PDF drafts</div>
+          <div class="muted small">Courier New preview • lines with CONT. are removed</div>
+        </div>
+        <button id="closeDrafts" class="ghost">Close</button>
+      </div>
+      <div class="draft-layout">
+        <div class="draft-sidebar">
+          <button id="refreshDraftPreview" class="with-icon" data-icon="pdf">Load current script</button>
+          <label>Version title
+            <input id="draftName" type="text" placeholder="Version 1" />
+          </label>
+          <button id="saveDraftVersion" class="icon-button with-icon" data-icon="save">Save version</button>
+          <div class="muted small">Saved versions</div>
+          <div id="draftVersionList" class="draft-version-list"></div>
+          <div class="muted small">Title page & watermark</div>
+          <label class="checkbox-line"><input type="checkbox" id="includeTitlePage" /> Include a title page</label>
+          <label>Title page title
+            <input id="draftTitlePageTitle" type="text" placeholder="Shoot!" />
+          </label>
+          <label>Subtitle / contact
+            <input id="draftTitlePageSubtitle" type="text" placeholder="by goblinStudio" />
+          </label>
+          <label>Author / writer
+            <input id="draftTitlePageAuthor" type="text" placeholder="Your name" />
+          </label>
+          <label>Watermark
+            <input id="draftWatermark" type="text" placeholder="Confidential" />
+          </label>
+        </div>
+        <div class="draft-preview-shell">
+          <div class="draft-preview-controls">
+            <div class="draft-view-toggle" role="group" aria-label="Preview layout">
+              <button class="icon-button with-icon" data-icon="scroll" id="draftViewScroll">Scroll view</button>
+              <button class="icon-button with-icon" data-icon="spread" id="draftViewSpread">Side by side</button>
+            </div>
+            <div class="draft-format-toggle" role="group" aria-label="Preview format">
+              <button class="icon-button with-icon" data-icon="pdf" id="draftFormatScript">Script view</button>
+              <button class="icon-button with-icon" data-icon="director" id="draftFormatDirector">Director view</button>
+            </div>
+            <div class="draft-export">
+              <button id="downloadDraft" class="icon-button with-icon" data-icon="download">Download PDF</button>
+            </div>
+          </div>
+          <div class="draft-preview" id="draftPreview" aria-label="PDF draft preview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
